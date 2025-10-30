@@ -17,3 +17,12 @@ export interface MonthlySummary {
   achievement: number;
   percentage: number;
 }
+
+export interface TopEmployee {
+  employee_id: string;
+  name: string;
+  office_location: string;
+  total_target: number;
+  total_achievement: number;
+  achievement_rate: number;
+}

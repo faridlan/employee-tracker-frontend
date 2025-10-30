@@ -1,8 +1,9 @@
 import React from "react";
 import ProductTargetChart from "./components/ProductTargetChart";
 import OverallTargetAchievementChart from "./components/OverallTargetAchievementChart";
+import TopEmployeesTable from "./components/TopEmployeesTable";
 
-const AnalyticsDashboardPage: React.FC = () => {
+const DashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 text-gray-800 p-6 space-y-6">
       <h1 className="text-3xl font-bold mb-4">📊 Analytics Dashboard</h1>
@@ -11,8 +12,10 @@ const AnalyticsDashboardPage: React.FC = () => {
         <ProductTargetChart />
         <OverallTargetAchievementChart />
       </div>
+
+      <TopEmployeesTable />
     </div>
   );
 };
 
-export default AnalyticsDashboardPage;
+export default DashboardPage;

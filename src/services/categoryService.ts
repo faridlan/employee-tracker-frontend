@@ -1,3 +1,4 @@
+import type { TopEmployee } from "../types/analytics";
 import type { Category } from "../types/product";
 
 const BASE_URL = "http://localhost:3000";
@@ -17,5 +18,11 @@ export async function createCategory(
     body: JSON.stringify(category),
   });
   if (!res.ok) throw new Error("Failed to create category");
+  return res.json();
+}
+
+export async function getTopEmployeesByAchievement(): Promise<TopEmployee[]> {
+  const res = await fetch(`${BASE_URL}/analytics/employees/top-achievers`);
+  if (!res.ok) throw new Error("Failed to fetch top employees");
   return res.json();
 }
