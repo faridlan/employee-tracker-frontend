@@ -10,3 +10,10 @@ export interface ProductSummary {
   product_name: string;
   total_nominal: number;
 }
+
+export interface MonthlySummary {
+  month: number;
+  target: number;
+  achievement: number;
+  percentage: number;
+}

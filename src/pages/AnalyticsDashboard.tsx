@@ -1,6 +1,6 @@
 import React from "react";
-import ProductTargetChart from "./components/ProductTargetChart";
-import OverallTargetAchievementChart from "./components/OverallTargetAchievementChart";
+import ProductTargetChart from "../components/ProductTargetChart";
+import OverallTargetAchievementChart from "../components/OverallTargetAchievementChart";
 
 const AnalyticsDashboardPage: React.FC = () => {
   return (
