@@ -120,15 +120,26 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
         <div className="flex gap-3">
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1">Month</label>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
-              required
-              className="w-full border rounded-lg px-3 py-2"
-            />
+<select
+  value={month}
+  onChange={(e) => setMonth(Number(e.target.value))}
+  required
+  className="w-full border rounded-lg px-3 py-2"
+>
+  <option value="">Select Month</option>
+  <option value="1">January</option>
+  <option value="2">February</option>
+  <option value="3">March</option>
+  <option value="4">April</option>
+  <option value="5">May</option>
+  <option value="6">June</option>
+  <option value="7">July</option>
+  <option value="8">August</option>
+  <option value="9">September</option>
+  <option value="10">October</option>
+  <option value="11">November</option>
+  <option value="12">December</option>
+</select>
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1">Year</label>

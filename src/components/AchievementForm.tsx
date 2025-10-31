@@ -5,6 +5,7 @@ import {
   updateAchievement,
 } from "../services/achievementService";
 import type { Target } from "../types/target";
+import getMonthName from "../helper/month";
 
 interface Props {
   onCreated: () => void;
@@ -126,7 +127,7 @@ const AchievementForm: React.FC<Props> = ({ onCreated }) => {
             {selectableTargets.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.employee?.name
-                  ? `${t.employee.name} - ${t.Product?.name || "No Product"} (${t.month}/${t.year})`
+                  ? `${t.employee.name} - ${t.Product?.name || "No Product"} (${getMonthName(t.month)}-${t.year})`
                   : t.id}
               </option>
             ))}
@@ -141,7 +142,7 @@ const AchievementForm: React.FC<Props> = ({ onCreated }) => {
               </p>
               <p>
                 📅 <strong>Month/Year:</strong>{" "}
-                {selectedTarget.month}/{selectedTarget.year}
+                {getMonthName(selectedTarget.month)}-{selectedTarget.year}
               </p>
               <p>
                 🧑‍💼 <strong>Employee:</strong>{" "}

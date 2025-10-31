@@ -8,3 +8,21 @@ export interface Achievement {
   updated_at: string;
   target?: Target; // includes employee, product, etc.
 }
+
+export interface AchievementQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  month?: number;
+  year?: number;
+  employeeId?: string;
+  productId?: string;
+}
+
+export interface PaginatedAchievements {
+  data: Achievement[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
