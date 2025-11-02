@@ -1,6 +1,6 @@
 import type { Employee } from "../types/employee";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "/api";
 
 export async function getAllEmployees(): Promise<Employee[]> {
   const response = await fetch(`${BASE_URL}/employees`);

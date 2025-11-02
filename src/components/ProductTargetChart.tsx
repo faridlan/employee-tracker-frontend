@@ -82,6 +82,7 @@ const ProductTargetChart: React.FC = () => {
               nameKey="name"
               cx="50%"
               cy="50%"
+              fontSize={8}
               outerRadius={150}
               fill="#8884d8"
               label={({ name, value }) =>

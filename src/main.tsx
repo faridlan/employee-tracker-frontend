@@ -10,21 +10,34 @@ import CategoryPage from "./pages/CategoryPage";
 import ProductPage from "./pages/ProductPage";
 import EmployeePage from "./pages/EmployeePage";
 import EmployeeDetailPage from "./pages/EmployeeDetailPage";
+import LoginPage from "./pages/LoginPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<App />} />
-          <Route path="/employees" element={<EmployeePage />} />
-          <Route path="/employees/:id" element={<EmployeeDetailPage />} />
-          <Route path="/categories" element={<CategoryPage />} />
-          <Route path="/products" element={<ProductPage />} />
-          <Route path="/targets" element={<TargetPage />} />
-          <Route path="/achievements" element={<AchievementPage />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<App />} />
+                  <Route path="/employees" element={<EmployeePage />} />
+                  <Route path="/employees/:id" element={<EmployeeDetailPage />} />
+                  <Route path="/categories" element={<CategoryPage />} />
+                  <Route path="/products" element={<ProductPage />} />
+                  <Route path="/targets" element={<TargetPage />} />
+                  <Route path="/achievements" element={<AchievementPage />} />
+                </Routes>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   </React.StrictMode>
 );

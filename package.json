@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.16",
+    "dom-to-image-more": "^3.7.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.548.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

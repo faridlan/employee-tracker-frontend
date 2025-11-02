@@ -1,7 +1,7 @@
 import type { TopEmployee } from "../types/analytics";
 import type { Category } from "../types/product";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "/api";
 
 export async function getAllCategories(): Promise<Category[]> {
   const res = await fetch(`${BASE_URL}/categories`);

@@ -26,4 +26,18 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Fix for html2canvas unsupported oklch() colors */
+* {
+  color-scheme: light !important;
+}
+
+.bg-gray-50,
+.bg-gray-100,
+.bg-white,
+.text-gray-700,
+.text-gray-800,
+.text-gray-900 {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
 

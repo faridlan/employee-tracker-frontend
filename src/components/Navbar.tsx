@@ -35,7 +35,10 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
         {open && (
           <div className="absolute right-0 mt-2 w-40 bg-white text-gray-800 rounded-lg shadow-lg border border-gray-200 z-10 animate-fadeIn">
             <button
-              onClick={() => alert("Logged out")}
+                onClick={() => {
+    localStorage.removeItem("auth");
+    window.location.href = "/login";
+  }}
               className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition"
             >
               <LogOut size={16} className="text-[#d13e56]" />

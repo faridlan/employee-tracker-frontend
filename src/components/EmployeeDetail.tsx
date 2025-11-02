@@ -114,7 +114,11 @@ const EmployeeDetail: React.FC = () => {
         </p>
 
         {/* Employee Performance Chart */}
-        <EmployeeChartForDetail employeeId={employee.id} />
+        <EmployeeChartForDetail employeeId={employee.id}
+        employeeName={employee.name}
+        employeePosition={employee.position}
+        entryDate={employee.entry_date}
+        />
 
         <hr className="my-6" />
 

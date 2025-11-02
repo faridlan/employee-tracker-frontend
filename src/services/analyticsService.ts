@@ -1,7 +1,7 @@
 import type { EmployeePerformance, ProductSummary } from "../types/analytics";
 import type { MonthlySummary } from "../types/analytics";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "/api";
 
 export async function getEmployeePerformance(
   employeeId: string,
@@ -43,4 +43,10 @@ export async function getOverallMonthlySummary(
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch monthly summary");
   return res.json();
+}
+
+export async function getEmployeeDetail(employeeId: string) {
+  const response = await fetch(`/api/employees/${employeeId}`);
+  if (!response.ok) throw new Error("Failed to fetch employee info");
+  return response.json();
 }

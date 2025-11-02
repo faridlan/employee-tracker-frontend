@@ -1,5 +1,6 @@
 export interface EmployeePerformance {
   month: string | number;
+  year: number;
   target: number;
   achievement: number;
   percentage: number;

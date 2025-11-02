@@ -73,27 +73,42 @@ const OverallTargetAchievementChart: React.FC = () => {
       {data.length === 0 ? (
         <p className="text-gray-500">No data available.</p>
       ) : (
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" tickFormatter={(m) => `Month ${m}`} />
-            <YAxis
-              tickFormatter={(v) =>
-                `Rp ${Number(v).toLocaleString("id-ID")}`
-              }
-              tick={{ fontSize: 12, fill: "#4b5563" }}
-            />
-            <Tooltip
-              formatter={(value: number, name: string) => [
-                `Rp ${Number(value).toLocaleString("id-ID")}`,
-                name,
-              ]}
-            />
-            <Legend />
-            <Bar dataKey="target" fill="#2563eb" name="Target" />
-            <Bar dataKey="achievement" fill="#16a34a" name="Achievement" />
-          </BarChart>
-        </ResponsiveContainer>
+<ResponsiveContainer width="100%" height={400}>
+  <BarChart data={data}>
+    <CartesianGrid strokeDasharray="3 3" />
+
+    {/* ✅ Month Name Short Format */}
+    <XAxis
+      dataKey="month"
+      tickFormatter={(m) =>
+        ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]
+      }
+    />
+
+    <YAxis
+      tickFormatter={(v) => `Rp ${Number(v).toLocaleString("id-ID")}`}
+      tick={{ fontSize: 8, fill: "#4b5563" }}
+    />
+
+<Tooltip
+  formatter={(value: number, name: string) => [
+    `Rp ${Number(value).toLocaleString("id-ID")}`,
+    name,
+  ]}
+  labelFormatter={(label) =>
+    [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
+    ][label - 1]
+  }
+/>
+    <Legend />
+
+    <Bar dataKey="target" fill="#2563eb" name="Target" />
+    <Bar dataKey="achievement" fill="#16a34a" name="Achievement" />
+  </BarChart>
+</ResponsiveContainer>
+
       )}
     </div>
   );

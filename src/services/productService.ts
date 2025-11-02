@@ -1,6 +1,6 @@
 import type { Product } from "../types/product";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "/api";
 
 export async function getAllProducts(): Promise<Product[]> {
   const res = await fetch(`${BASE_URL}/products`);
