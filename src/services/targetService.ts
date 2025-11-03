@@ -67,3 +67,32 @@ export async function getTargetsByEmployee(
 
   return res.json();
 }
+
+export async function updateTarget(
+  id: string,
+  updates: Partial<Target>
+): Promise<Target> {
+  const res = await fetch(`${BASE_URL}/targets/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Failed to update target: ${txt || res.statusText}`);
+  }
+
+  return res.json();
+}
+
+export async function deleteTarget(id: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/targets/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Failed to delete target: ${txt || res.statusText}`);
+  }
+}

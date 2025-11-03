@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { Target } from "../types/target";
-import { getAllTargets } from "../services/targetService";
+import { getAllTargets, deleteTarget } from "../services/targetService";
 import getMonthName from "../helper/month";
+import UpdateTargetModal from "./UpdateTargetModal";
 
 interface Props {
   refreshTrigger: number;
@@ -12,17 +13,28 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Filters
-  const [search, setSearch] = useState("");
-  const [filterYear, setFilterYear] = useState<number | "all">("all");
-  const [filterMonth, setFilterMonth] = useState<number | "all">("all");
-  const [filterEmployee, setFilterEmployee] = useState<string>("all");
-  const [filterProduct, setFilterProduct] = useState<string>("all");
+  // ✅ Edit Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedTarget, setSelectedTarget] = useState<Target | null>(null);
 
-  // ✅ Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 8;
+  const openEditModal = (target: Target) => {
+    setSelectedTarget(target);
+    setShowEditModal(true);
+  };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this target?")) return;
+
+    try {
+      await deleteTarget(id);
+      setTargets((prev) => prev.filter((t) => t.id !== id)); // remove instantly
+    } catch (err: unknown) {
+      if (err instanceof Error) alert(err.message);
+      else alert("Failed to delete target");
+    }
+  };
+
+  // ✅ Fetch Targets
   useEffect(() => {
     const fetchTargets = async () => {
       setLoading(true);
@@ -41,21 +53,24 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
     fetchTargets();
   }, [refreshTrigger]);
 
-  // ✅ Extract filter options
+  // ✅ Filters
+  const [search, setSearch] = useState("");
+  const [filterYear, setFilterYear] = useState<number | "all">("all");
+  const [filterMonth, setFilterMonth] = useState<number | "all">("all");
+  const [filterEmployee, setFilterEmployee] = useState<string>("all");
+  const [filterProduct, setFilterProduct] = useState<string>("all");
+
   const years = useMemo(
     () => Array.from(new Set(targets.map((t) => t.year))).sort((a, b) => b - a),
     [targets]
   );
-
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
   const employees = useMemo(
     () =>
       Array.from(
         new Set(
-          targets
-            .map((t) => t.employee?.name)
-            .filter((n): n is string => Boolean(n))
+          targets.map((t) => t.employee?.name).filter((n): n is string => Boolean(n))
         )
       ),
     [targets]
@@ -65,9 +80,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
     () =>
       Array.from(
         new Set(
-          targets
-            .map((t) => t.Product?.name)
-            .filter((n): n is string => Boolean(n))
+          targets.map((t) => t.Product?.name).filter((n): n is string => Boolean(n))
         )
       ),
     [targets]
@@ -82,14 +95,10 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
         String(t.year).includes(search) ||
         String(t.month).includes(search);
 
-      const matchesYear =
-        filterYear === "all" ? true : t.year === filterYear;
-      const matchesMonth =
-        filterMonth === "all" ? true : t.month === filterMonth;
+      const matchesYear = filterYear === "all" ? true : t.year === filterYear;
+      const matchesMonth = filterMonth === "all" ? true : t.month === filterMonth;
       const matchesEmployee =
-        filterEmployee === "all"
-          ? true
-          : t.employee?.name === filterEmployee;
+        filterEmployee === "all" ? true : t.employee?.name === filterEmployee;
       const matchesProduct =
         filterProduct === "all" ? true : t.Product?.name === filterProduct;
 
@@ -104,7 +113,9 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
   }, [targets, search, filterYear, filterMonth, filterEmployee, filterProduct]);
 
   // ✅ Pagination logic
+  const pageSize = 8;
   const totalPages = Math.ceil(filteredTargets.length / pageSize);
+  const [currentPage, setCurrentPage] = useState(1);
   const paginatedTargets = filteredTargets.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
@@ -124,7 +135,6 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
         <h2 className="text-xl font-semibold">🎯 All Targets</h2>
 
-        {/* Search */}
         <input
           type="text"
           placeholder="Search employee, product, year..."
@@ -139,9 +149,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
         <select
           value={filterYear}
           onChange={(e) =>
-            setFilterYear(
-              e.target.value === "all" ? "all" : Number(e.target.value)
-            )
+            setFilterYear(e.target.value === "all" ? "all" : Number(e.target.value))
           }
           className="border rounded-lg px-3 py-2"
         >
@@ -156,9 +164,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
         <select
           value={filterMonth}
           onChange={(e) =>
-            setFilterMonth(
-              e.target.value === "all" ? "all" : Number(e.target.value)
-            )
+            setFilterMonth(e.target.value === "all" ? "all" : Number(e.target.value))
           }
           className="border rounded-lg px-3 py-2"
         >
@@ -204,19 +210,17 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
             <tr>
               <th className="px-4 py-2 text-left">Employee</th>
               <th className="px-4 py-2 text-left">Product</th>
-              <th className="px-4 py-2 text-right">Target Nominal</th>
+              <th className="px-4 py-2 text-right">Target</th>
               <th className="px-4 py-2 text-center">Month</th>
               <th className="px-4 py-2 text-center">Year</th>
               <th className="px-4 py-2 text-right">Achievement</th>
+              <th className="px-4 py-2 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {paginatedTargets.length === 0 ? (
               <tr>
-                <td
-                  colSpan={6}
-                  className="text-center py-4 text-gray-500 italic"
-                >
+                <td colSpan={7} className="text-center py-4 text-gray-500 italic">
                   No matching records found
                 </td>
               </tr>
@@ -234,6 +238,20 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
                     {t.Achievement
                       ? `Rp ${t.Achievement.nominal.toLocaleString("id-ID")}`
                       : "—"}
+                  </td>
+                  <td className="px-4 py-2 text-center space-x-2">
+                    <button
+                      onClick={() => openEditModal(t)}
+                      className="px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(t.id)}
+                      className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))
@@ -265,6 +283,17 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
             Next
           </button>
         </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && selectedTarget && (
+        <UpdateTargetModal
+          target={selectedTarget}
+          onClose={() => setShowEditModal(false)}
+          onUpdated={() => {
+            setShowEditModal(false);
+          }}
+        />
       )}
     </div>
   );
