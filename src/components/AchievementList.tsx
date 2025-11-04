@@ -223,6 +223,7 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
           <thead className="bg-gray-100">
             <tr>
               <th className="px-4 py-2 text-left">Employee</th>
+              <th className="px-4 py-2 text-left">Position</th>
               <th className="px-4 py-2 text-left">Product</th>
               <th className="px-4 py-2 text-center">Month</th>
               <th className="px-4 py-2 text-center">Year</th>
@@ -245,6 +246,9 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
                 <tr key={a.id} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-2">
                     {a.target?.employee?.name || "—"}
+                  </td>
+                  <td className="px-4 py-2">
+                    {a.target?.employee?.position || "—"}
                   </td>
                   <td className="px-4 py-2">
                     {a.target?.Product?.name || "—"}
