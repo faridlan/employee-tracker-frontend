@@ -4,6 +4,7 @@ import { updateTarget } from "../services/targetService";
 import { getAllProducts } from "../services/productService";
 import type { Product } from "../types/product";
 import { useToast } from "./ToastProvider";
+import IDRInput from "../components/common/IDRInput"; // ✅ Added
 
 interface UpdateTargetModalProps {
   target: Target;
@@ -17,7 +18,7 @@ const UpdateTargetModal = ({ target, onClose, onUpdated }: UpdateTargetModalProp
   const [products, setProducts] = useState<Product[]>([]);
   const [productId, setProductId] = useState(target.product_id);
 
-  // Format initial nominal to "100.000.000"
+  // initial formatted
   const [nominal, setNominal] = useState(
     target.nominal.toLocaleString("id-ID").replace(/,/g, ".")
   );
@@ -29,20 +30,13 @@ const UpdateTargetModal = ({ target, onClose, onUpdated }: UpdateTargetModalProp
     getAllProducts().then(setProducts).catch(() => setProducts([]));
   }, []);
 
-  // Format input as Indonesian thousand separator
-  const handleNominalChange = (val: string) => {
-    const cleaned = val.replace(/\D/g, ""); // remove non digits
-    const formatted = cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    setNominal(formatted);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const numericNominal = Number(nominal.replace(/\./g, ""));
+      const numericNominal = Number(nominal.replace(/\./g, "")); // ✅ convert to integer
 
       if (isNaN(numericNominal) || numericNominal < 0) {
         setError("Nominal must be a valid number");
@@ -104,20 +98,8 @@ const UpdateTargetModal = ({ target, onClose, onUpdated }: UpdateTargetModalProp
             </select>
           </div>
 
-          {/* Nominal */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Nominal</label>
-            <div className="flex items-center border rounded-lg px-3 py-2 bg-white">
-              <span className="mr-1 text-gray-600">Rp</span>
-              <input
-                type="text"
-                value={nominal}
-                onChange={(e) => handleNominalChange(e.target.value)}
-                required
-                className="w-full outline-none"
-              />
-            </div>
-          </div>
+          {/* Nominal (Formatted IDR) */}
+          <IDRInput value={nominal} onChange={setNominal} required />
 
           {/* Month & Year (locked) */}
           <div className="flex gap-3">
