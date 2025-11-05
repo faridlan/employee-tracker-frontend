@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { Achievement } from "../types/achievement";
 import { getAllAchievements } from "../services/achievementService";
 import getMonthName from "../helper/month";
+import { ThumbsUp, ThumbsDown } from "lucide-react";
 
 interface Props {
   refreshTrigger: number;
@@ -12,14 +13,14 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Filters
+  // Filters
   const [search, setSearch] = useState("");
   const [filterYear, setFilterYear] = useState<number | "all">("all");
   const [filterMonth, setFilterMonth] = useState<number | "all">("all");
   const [filterEmployee, setFilterEmployee] = useState<string>("all");
   const [filterProduct, setFilterProduct] = useState<string>("all");
 
-  // ✅ Pagination
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
@@ -41,7 +42,7 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
     fetchAchievements();
   }, [refreshTrigger]);
 
-  // ✅ Extract filter options
+  // Filter options
   const years = useMemo(
     () =>
       Array.from(
@@ -80,31 +81,21 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
     [achievements]
   );
 
-  // ✅ Apply filters + search
+  // Apply filters + search
   const filteredAchievements = useMemo(() => {
     return achievements.filter((a) => {
       const matchesSearch =
-        a.target?.employee?.name
-          ?.toLowerCase()
-          .includes(search.toLowerCase()) ||
-        a.target?.Product?.name
-          ?.toLowerCase()
-          .includes(search.toLowerCase()) ||
+        a.target?.employee?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        a.target?.Product?.name?.toLowerCase().includes(search.toLowerCase()) ||
         String(a.target?.year || "").includes(search) ||
         String(a.target?.month || "").includes(search);
 
-      const matchesYear =
-        filterYear === "all" ? true : a.target?.year === filterYear;
-      const matchesMonth =
-        filterMonth === "all" ? true : a.target?.month === filterMonth;
+      const matchesYear = filterYear === "all" ? true : a.target?.year === filterYear;
+      const matchesMonth = filterMonth === "all" ? true : a.target?.month === filterMonth;
       const matchesEmployee =
-        filterEmployee === "all"
-          ? true
-          : a.target?.employee?.name === filterEmployee;
+        filterEmployee === "all" ? true : a.target?.employee?.name === filterEmployee;
       const matchesProduct =
-        filterProduct === "all"
-          ? true
-          : a.target?.Product?.name === filterProduct;
+        filterProduct === "all" ? true : a.target?.Product?.name === filterProduct;
 
       return (
         matchesSearch &&
@@ -114,16 +105,9 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
         matchesProduct
       );
     });
-  }, [
-    achievements,
-    search,
-    filterYear,
-    filterMonth,
-    filterEmployee,
-    filterProduct,
-  ]);
+  }, [achievements, search, filterYear, filterMonth, filterEmployee, filterProduct]);
 
-  // ✅ Pagination logic
+  // Pagination logic
   const totalPages = Math.ceil(filteredAchievements.length / pageSize);
   const paginatedAchievements = filteredAchievements.slice(
     (currentPage - 1) * pageSize,
@@ -135,7 +119,7 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
     setCurrentPage(page);
   };
 
-  // ✅ UI Rendering
+  // UI
   if (loading) return <p>Loading achievements...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
 
@@ -158,35 +142,23 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm">
         <select
           value={filterYear}
-          onChange={(e) =>
-            setFilterYear(
-              e.target.value === "all" ? "all" : Number(e.target.value)
-            )
-          }
+          onChange={(e) => setFilterYear(e.target.value === "all" ? "all" : Number(e.target.value))}
           className="border rounded-lg px-3 py-2"
         >
           <option value="all">All Years</option>
           {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
+            <option key={y} value={y}>{y}</option>
           ))}
         </select>
 
         <select
           value={filterMonth}
-          onChange={(e) =>
-            setFilterMonth(
-              e.target.value === "all" ? "all" : Number(e.target.value)
-            )
-          }
+          onChange={(e) => setFilterMonth(e.target.value === "all" ? "all" : Number(e.target.value))}
           className="border rounded-lg px-3 py-2"
         >
           <option value="all">All Months</option>
           {months.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
+            <option key={m} value={m}>{m}</option>
           ))}
         </select>
 
@@ -197,9 +169,7 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
         >
           <option value="all">All Employees</option>
           {employees.map((emp) => (
-            <option key={emp} value={emp}>
-              {emp}
-            </option>
+            <option key={emp} value={emp}>{emp}</option>
           ))}
         </select>
 
@@ -210,9 +180,7 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
         >
           <option value="all">All Products</option>
           {products.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
+            <option key={p} value={p}>{p}</option>
           ))}
         </select>
       </div>
@@ -227,46 +195,47 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
               <th className="px-4 py-2 text-left">Product</th>
               <th className="px-4 py-2 text-center">Month</th>
               <th className="px-4 py-2 text-center">Year</th>
-              <th className="px-4 py-2 text-right">Nominal</th>
-              <th className="px-4 py-2 text-center">Created At</th>
+              <th className="px-4 py-2 text-right">Target Nominal</th>
+              <th className="px-4 py-2 text-right">Achiev Nominal</th>
+              <th className="px-4 py-2 text-center">Status</th>
             </tr>
           </thead>
           <tbody>
             {paginatedAchievements.length === 0 ? (
               <tr>
-                <td
-                  colSpan={6}
-                  className="text-center py-4 text-gray-500 italic"
-                >
+                <td colSpan={7} className="text-center py-4 text-gray-500 italic">
                   No matching records found
                 </td>
               </tr>
             ) : (
-              paginatedAchievements.map((a) => (
-                <tr key={a.id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-2">
-                    {a.target?.employee?.name || "—"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {a.target?.employee?.position || "—"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {a.target?.Product?.name || "—"}
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    {getMonthName(a.target?.month) ?? "—"}
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    {a.target?.year ?? "—"}
-                  </td>
-                  <td className="px-4 py-2 text-right">
-                    Rp {a.nominal.toLocaleString("id-ID")}
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    {new Date(a.created_at).toLocaleDateString("id-ID")}
-                  </td>
-                </tr>
-              ))
+              paginatedAchievements.map((a) => {
+                const achieved = a.nominal >= (a.target?.nominal ?? 0);
+
+                return (
+                  <tr key={a.id} className="border-t hover:bg-gray-50">
+                    <td className="px-4 py-2">{a.target?.employee?.name || "—"}</td>
+                    <td className="px-4 py-2">{a.target?.employee?.position || "—"}</td>
+                    <td className="px-4 py-2">{a.target?.Product?.name || "—"}</td>
+                    <td className="px-4 py-2 text-center">{getMonthName(a.target?.month) ?? "—"}</td>
+                    <td className="px-4 py-2 text-center">{a.target?.year ?? "—"}</td>
+                    <td className="px-4 py-2 text-right">Rp {a.target?.nominal.toLocaleString("id-ID")}</td>
+                    <td className="px-4 py-2 text-right">Rp {a.nominal.toLocaleString("id-ID")}</td>
+
+                    {/* ✅ Status Column */}
+                    <td className="px-4 py-2 text-center">
+                      {achieved ? (
+                        <span className="flex items-center justify-center gap-1 text-green-600 font-medium">
+                          <ThumbsUp size={16} /> Achieved
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-1 text-red-600 font-medium">
+                          <ThumbsDown size={16} /> Not Achieved
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

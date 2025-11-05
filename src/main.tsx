@@ -6,13 +6,13 @@ import Layout from "./components/Layout";
 import "./index.css";
 import TargetPage from "./pages/TargetPage";
 import AchievementPage from "./pages/AchievementPage";
-import CategoryPage from "./pages/CategoryPage";
 import ProductPage from "./pages/ProductPage";
 import EmployeePage from "./pages/EmployeePage";
 import EmployeeDetailPage from "./pages/EmployeeDetailPage";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ToastProvider } from "./components/ToastProvider";
+import CategoryProductPage from "./pages/CategoryProductPage";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -30,7 +30,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                     <Route path="/" element={<App />} />
                     <Route path="/employees" element={<EmployeePage />} />
                     <Route path="/employees/:id" element={<EmployeeDetailPage />} />
-                    <Route path="/categories" element={<CategoryPage />} />
+                    <Route path="/products-categories" element={<CategoryProductPage />} />
                     <Route path="/products" element={<ProductPage />} />
                     <Route path="/targets" element={<TargetPage />} />
                     <Route path="/achievements" element={<AchievementPage />} />

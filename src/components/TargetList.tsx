@@ -270,7 +270,7 @@ const refreshAfterUpdate = async () => {
               <th className="px-4 py-2 text-right">Target</th>
               <th className="px-4 py-2 text-center">Month</th>
               <th className="px-4 py-2 text-center">Year</th>
-              <th className="px-4 py-2 text-right">Achievement</th>
+              {/* <th className="px-4 py-2 text-right">Achievement</th> */}
               <th className="px-4 py-2 text-center">Actions</th>
             </tr>
           </thead>
@@ -292,11 +292,11 @@ const refreshAfterUpdate = async () => {
                   </td>
                   <td className="px-4 py-2 text-center">{getMonthName(t.month)}</td>
                   <td className="px-4 py-2 text-center">{t.year}</td>
-                  <td className="px-4 py-2 text-right">
+                  {/* <td className="px-4 py-2 text-right">
                     {t.Achievement
                       ? `Rp ${t.Achievement.nominal.toLocaleString("id-ID")}`
                       : "—"}
-                  </td>
+                  </td> */}
                   <td className="px-4 py-2 text-center space-x-2">
                     <button
                       onClick={() => openEditModal(t)}

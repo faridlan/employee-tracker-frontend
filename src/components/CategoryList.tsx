@@ -34,20 +34,35 @@ const CategoryList: React.FC<Props> = ({ refreshTrigger }) => {
   return (
     <div className="bg-white p-4 rounded-xl shadow">
       <h2 className="text-xl font-semibold mb-4">Categories & Products</h2>
-      {categories.map((cat) => (
-        <div key={cat.id} className="mb-4 border-b pb-3">
-          <h3 className="font-semibold">{cat.name}</h3>
-          {cat.products && cat.products.length > 0 ? (
-            <ul className="list-disc ml-6 text-gray-600">
-              {cat.products.map((p) => (
-                <li key={p.id}>{p.name}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500 text-sm ml-6">No products</p>
-          )}
-        </div>
-      ))}
+
+      {categories.map((cat) => {
+        const count = cat.products?.length ?? 0;
+        return (
+          <div key={cat.id} className="mb-4 border-b pb-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">
+                {cat.name}{" "}
+                <span className="text-sm text-gray-500">({count})</span>
+              </h3>
+            </div>
+
+            {count > 0 ? (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {cat.products!.map((p) => (
+                  <span
+                    key={p.id}
+                    className="px-2 py-1 bg-gray-200 text-gray-700 rounded-full text-xs sm:text-sm"
+                  >
+                    {p.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm mt-2">No products</p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };

@@ -5,7 +5,6 @@ import {
   Target,
   Trophy,
   Users,
-  Package,
   Folder,
   ChevronDown,
   ChevronRight,
@@ -33,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
       {/* Company Logo */}
       <div className="px-6 py-4 border-b border-[#d7d7d7] flex items-center gap-2">
         <div className="bg-[#2f8bcc] text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
-          {open ? "C" : "C"}
+          C
         </div>
         {open && <h2 className="text-lg font-bold text-[#2f8bcc]">Company</h2>}
       </div>
@@ -63,7 +62,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
         {/* Products Section */}
         <button
           onClick={() => setOpenProducts(!openProducts)}
-          className={`${linkStyle} w-full justify-between ${inactive}`}
+          className={`${linkStyle} w-full justify-between ${
+            openProducts ? "text-[#2f8bcc]" : inactive
+          }`}
         >
           <span className="flex items-center gap-3">
             <Folder size={18} />
@@ -73,29 +74,19 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
             (openProducts ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
         </button>
 
+        {/* Submenu (only 1 item now) */}
         <div
           className={`ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${
-            openProducts ? "max-h-32 opacity-100" : "max-h-0 opacity-0"
+            openProducts ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
           <NavLink
-            to="/categories"
+            to="/products-categories"
             className={({ isActive }) =>
               `${linkStyle} ${isActive ? active : inactive}`
             }
           >
-            <Package size={16} />
-            {open && "Category"}
-          </NavLink>
-
-          <NavLink
-            to="/products"
-            className={({ isActive }) =>
-              `${linkStyle} ${isActive ? active : inactive}`
-            }
-          >
-            <Package size={16} />
-            {open && "Product"}
+            {open && "Categories & Products"}
           </NavLink>
         </div>
       </nav>

@@ -1,3 +1,4 @@
+// services/categoryService.ts
 import type { TopEmployee } from "../types/analytics";
 import type { Category } from "../types/product";
 
@@ -19,6 +20,30 @@ export async function createCategory(
   });
   if (!res.ok) throw new Error("Failed to create category");
   return res.json();
+}
+
+export async function updateCategory(
+  id: string,
+  data: Partial<Pick<Category, "name">>
+): Promise<Category> {
+  const res = await fetch(`${BASE_URL}/categories/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message || "Failed to update category");
+  }
+  return res.json();
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const res = await fetch(`${BASE_URL}/categories/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message || "Failed to delete category");
+  }
 }
 
 export async function getTopEmployeesByAchievement(): Promise<TopEmployee[]> {
