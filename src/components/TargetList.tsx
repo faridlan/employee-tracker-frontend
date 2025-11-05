@@ -13,6 +13,9 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ Tab State
+  const [activeTab, setActiveTab] = useState<"all" | "AO" | "FO">("all");
+
   // ✅ Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<Target | null>(null);
@@ -27,12 +30,21 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
 
     try {
       await deleteTarget(id);
-      setTargets((prev) => prev.filter((t) => t.id !== id)); // remove instantly
+      setTargets((prev) => prev.filter((t) => t.id !== id));
     } catch (err: unknown) {
       if (err instanceof Error) alert(err.message);
       else alert("Failed to delete target");
     }
   };
+
+const refreshAfterUpdate = async () => {
+  try {
+    const data = await getAllTargets();
+    setTargets(Array.isArray(data) ? data : []);
+  } catch (error) {
+    console.error("Failed to refresh targets after update:", error);
+  }
+};
 
   // ✅ Fetch Targets
   useEffect(() => {
@@ -86,9 +98,28 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
     [targets]
   );
 
-  // ✅ Apply filters + search
+  // ✅ Count per tab (C1)
+  const countAll = targets.length;
+  const countAO = targets.filter((t) => t.employee?.position === "AO").length;
+  const countFO = targets.filter((t) => t.employee?.position === "FO").length;
+
+  // ✅ Handle Tab Change (T1: Reset filters)
+  const handleTabClick = (tab: "all" | "AO" | "FO") => {
+    setActiveTab(tab);
+    setSearch("");
+    setFilterYear("all");
+    setFilterMonth("all");
+    setFilterEmployee("all");
+    setFilterProduct("all");
+    setCurrentPage(1);
+  };
+
+  // ✅ Apply filters + search + tab
   const filteredTargets = useMemo(() => {
     return targets.filter((t) => {
+      const matchesTab =
+        activeTab === "all" ? true : t.employee?.position === activeTab;
+
       const matchesSearch =
         t.employee?.name?.toLowerCase().includes(search.toLowerCase()) ||
         t.Product?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -103,6 +134,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
         filterProduct === "all" ? true : t.Product?.name === filterProduct;
 
       return (
+        matchesTab &&
         matchesSearch &&
         matchesYear &&
         matchesMonth &&
@@ -110,9 +142,9 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
         matchesProduct
       );
     });
-  }, [targets, search, filterYear, filterMonth, filterEmployee, filterProduct]);
+  }, [targets, search, filterYear, filterMonth, filterEmployee, filterProduct, activeTab]);
 
-  // ✅ Pagination logic
+  // ✅ Pagination
   const pageSize = 8;
   const totalPages = Math.ceil(filteredTargets.length / pageSize);
   const [currentPage, setCurrentPage] = useState(1);
@@ -132,6 +164,30 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
+
+      {/* 🚀 TAB BAR */}
+      <div className="flex gap-2 mb-4">
+        {[
+          { key: "all", label: `All (${countAll})` },
+          { key: "AO", label: `AO (${countAO})` },
+          { key: "FO", label: `FO (${countFO})` },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => handleTabClick(tab.key as "all" | "AO" | "FO")}
+            className={`px-4 py-2 rounded-lg border text-sm transition
+              ${
+                activeTab === tab.key
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+              }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
         <h2 className="text-xl font-semibold">🎯 All Targets</h2>
 
@@ -262,7 +318,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
         </table>
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4 text-sm">
           <button
@@ -289,13 +345,14 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
 
       {/* Edit Modal */}
       {showEditModal && selectedTarget && (
-        <UpdateTargetModal
-          target={selectedTarget}
-          onClose={() => setShowEditModal(false)}
-          onUpdated={() => {
-            setShowEditModal(false);
-          }}
-        />
+  <UpdateTargetModal
+    target={selectedTarget}
+    onClose={() => setShowEditModal(false)}
+    onUpdated={async () => {
+      await refreshAfterUpdate(); // ✅ Refresh list after update
+      setShowEditModal(false);
+    }}
+  />
       )}
     </div>
   );
