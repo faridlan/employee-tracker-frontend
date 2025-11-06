@@ -3,81 +3,100 @@ import type { Target } from "../types/target";
 import { getAllTargets, deleteTarget } from "../services/targetService";
 import getMonthName from "../helper/month";
 import UpdateTargetModal from "./UpdateTargetModal";
+import ConfirmDialog from "./common/ConfirmDialog";
+import { useToast } from "./ToastProvider";
 
 interface Props {
   refreshTrigger: number;
 }
 
 const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
+  const { showToast } = useToast();
+
+  // Data + status
   const [targets, setTargets] = useState<Target[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Tab State
+  // Tabs
   const [activeTab, setActiveTab] = useState<"all" | "AO" | "FO">("all");
 
-  // ✅ Edit Modal State
+  // Edit Modal
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<Target | null>(null);
 
-  const openEditModal = (target: Target) => {
-    setSelectedTarget(target);
-    setShowEditModal(true);
-  };
+  // Confirm Delete
+  const [confirmTarget, setConfirmTarget] = useState<Target | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this target?")) return;
-
-    try {
-      await deleteTarget(id);
-      setTargets((prev) => prev.filter((t) => t.id !== id));
-    } catch (err: unknown) {
-      if (err instanceof Error) alert(err.message);
-      else alert("Failed to delete target");
-    }
-  };
-
-const refreshAfterUpdate = async () => {
-  try {
-    const data = await getAllTargets();
-    setTargets(Array.isArray(data) ? data : []);
-  } catch (error) {
-    console.error("Failed to refresh targets after update:", error);
-  }
-};
-
-  // ✅ Fetch Targets
-  useEffect(() => {
-    const fetchTargets = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getAllTargets();
-        if (Array.isArray(data)) setTargets(data);
-        else setTargets([]);
-      } catch (err: unknown) {
-        if (err instanceof Error) setError(err.message);
-        else setError("Failed to fetch targets");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTargets();
-  }, [refreshTrigger]);
-
-  // ✅ Filters
+  // Filters
   const [search, setSearch] = useState("");
   const [filterYear, setFilterYear] = useState<number | "all">("all");
   const [filterMonth, setFilterMonth] = useState<number | "all">("all");
   const [filterEmployee, setFilterEmployee] = useState<string>("all");
   const [filterProduct, setFilterProduct] = useState<string>("all");
 
+  // Pagination
+  const pageSize = 8;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Helpers
+  const refresh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getAllTargets();
+      setTargets(Array.isArray(data) ? data : []);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to fetch targets");
+      setTargets([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openEditModal = (target: Target) => {
+    setSelectedTarget(target);
+    setShowEditModal(true);
+  };
+
+  const requestDelete = (target: Target) => {
+    setConfirmTarget(target);
+  };
+
+  const handleDelete = async () => {
+    if (!confirmTarget) return;
+    try {
+      setDeleting(true);
+      await deleteTarget(confirmTarget.id); // backend also hard-deletes achievement
+      showToast("Target deleted and Achievement removed ✅", "success");
+      await refresh(); // Delete: B → always re-fetch backend
+    } catch (err: unknown) {
+      showToast(
+        err instanceof Error ? err.message : "Failed to delete target ❌",
+        "error"
+      );
+    } finally {
+      setDeleting(false);
+      setConfirmTarget(null);
+    }
+  };
+
+  const refreshAfterUpdate = async () => {
+    await refresh();
+  };
+
+  // Initial + external refresh
+  useEffect(() => {
+    void refresh();
+  }, [refreshTrigger]);
+
+  // Derived data (useMemo used)
   const years = useMemo(
     () => Array.from(new Set(targets.map((t) => t.year))).sort((a, b) => b - a),
     [targets]
   );
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
-
   const employees = useMemo(
     () =>
       Array.from(
@@ -87,7 +106,6 @@ const refreshAfterUpdate = async () => {
       ),
     [targets]
   );
-
   const products = useMemo(
     () =>
       Array.from(
@@ -98,12 +116,12 @@ const refreshAfterUpdate = async () => {
     [targets]
   );
 
-  // ✅ Count per tab (C1)
+  // Tab counts
   const countAll = targets.length;
   const countAO = targets.filter((t) => t.employee?.position === "AO").length;
   const countFO = targets.filter((t) => t.employee?.position === "FO").length;
 
-  // ✅ Handle Tab Change (T1: Reset filters)
+  // Tab switch → reset filters & pagination
   const handleTabClick = (tab: "all" | "AO" | "FO") => {
     setActiveTab(tab);
     setSearch("");
@@ -114,7 +132,7 @@ const refreshAfterUpdate = async () => {
     setCurrentPage(1);
   };
 
-  // ✅ Apply filters + search + tab
+  // Apply filters + search + tab
   const filteredTargets = useMemo(() => {
     return targets.filter((t) => {
       const matchesTab =
@@ -142,30 +160,34 @@ const refreshAfterUpdate = async () => {
         matchesProduct
       );
     });
-  }, [targets, search, filterYear, filterMonth, filterEmployee, filterProduct, activeTab]);
+  }, [
+    targets,
+    search,
+    filterYear,
+    filterMonth,
+    filterEmployee,
+    filterProduct,
+    activeTab,
+  ]);
 
-  // ✅ Pagination
-  const pageSize = 8;
+  // Pagination
   const totalPages = Math.ceil(filteredTargets.length / pageSize);
-  const [currentPage, setCurrentPage] = useState(1);
   const paginatedTargets = filteredTargets.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
   };
 
-  // ✅ UI Rendering
+  // UI
   if (loading) return <p>Loading targets...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
-
-      {/* 🚀 TAB BAR */}
+      {/* Tabs */}
       <div className="flex gap-2 mb-4">
         {[
           { key: "all", label: `All (${countAll})` },
@@ -177,7 +199,7 @@ const refreshAfterUpdate = async () => {
             onClick={() => handleTabClick(tab.key as "all" | "AO" | "FO")}
             className={`px-4 py-2 rounded-lg border text-sm transition
               ${
-                activeTab === tab.key
+                activeTab === (tab.key as "all" | "AO" | "FO")
                   ? "bg-blue-600 text-white border-blue-600"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
               }`}
@@ -195,7 +217,10 @@ const refreshAfterUpdate = async () => {
           type="text"
           placeholder="Search employee, product, year..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
           className="border rounded-lg px-3 py-2 w-full md:w-64 text-sm"
         />
       </div>
@@ -204,9 +229,10 @@ const refreshAfterUpdate = async () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm">
         <select
           value={filterYear}
-          onChange={(e) =>
-            setFilterYear(e.target.value === "all" ? "all" : Number(e.target.value))
-          }
+          onChange={(e) => {
+            setFilterYear(e.target.value === "all" ? "all" : Number(e.target.value));
+            setCurrentPage(1);
+          }}
           className="border rounded-lg px-3 py-2"
         >
           <option value="all">All Years</option>
@@ -219,9 +245,10 @@ const refreshAfterUpdate = async () => {
 
         <select
           value={filterMonth}
-          onChange={(e) =>
-            setFilterMonth(e.target.value === "all" ? "all" : Number(e.target.value))
-          }
+          onChange={(e) => {
+            setFilterMonth(e.target.value === "all" ? "all" : Number(e.target.value));
+            setCurrentPage(1);
+          }}
           className="border rounded-lg px-3 py-2"
         >
           <option value="all">All Months</option>
@@ -234,7 +261,10 @@ const refreshAfterUpdate = async () => {
 
         <select
           value={filterEmployee}
-          onChange={(e) => setFilterEmployee(e.target.value)}
+          onChange={(e) => {
+            setFilterEmployee(e.target.value);
+            setCurrentPage(1);
+          }}
           className="border rounded-lg px-3 py-2"
         >
           <option value="all">All Employees</option>
@@ -247,7 +277,10 @@ const refreshAfterUpdate = async () => {
 
         <select
           value={filterProduct}
-          onChange={(e) => setFilterProduct(e.target.value)}
+          onChange={(e) => {
+            setFilterProduct(e.target.value);
+            setCurrentPage(1);
+          }}
           className="border rounded-lg px-3 py-2"
         >
           <option value="all">All Products</option>
@@ -270,7 +303,6 @@ const refreshAfterUpdate = async () => {
               <th className="px-4 py-2 text-right">Target</th>
               <th className="px-4 py-2 text-center">Month</th>
               <th className="px-4 py-2 text-center">Year</th>
-              {/* <th className="px-4 py-2 text-right">Achievement</th> */}
               <th className="px-4 py-2 text-center">Actions</th>
             </tr>
           </thead>
@@ -292,11 +324,6 @@ const refreshAfterUpdate = async () => {
                   </td>
                   <td className="px-4 py-2 text-center">{getMonthName(t.month)}</td>
                   <td className="px-4 py-2 text-center">{t.year}</td>
-                  {/* <td className="px-4 py-2 text-right">
-                    {t.Achievement
-                      ? `Rp ${t.Achievement.nominal.toLocaleString("id-ID")}`
-                      : "—"}
-                  </td> */}
                   <td className="px-4 py-2 text-center space-x-2">
                     <button
                       onClick={() => openEditModal(t)}
@@ -305,7 +332,7 @@ const refreshAfterUpdate = async () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(t.id)}
+                      onClick={() => requestDelete(t)}
                       className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
                     >
                       Delete
@@ -343,16 +370,49 @@ const refreshAfterUpdate = async () => {
         </div>
       )}
 
+      {/* Confirm Delete Dialog */}
+      {confirmTarget && (
+        <ConfirmDialog
+          title="Delete Target"
+          message={
+            <div className="space-y-1">
+              <p>
+                Are you sure you want to delete this target? This will also permanently
+                delete the related achievement.
+              </p>
+              <div className="mt-3 text-sm bg-gray-50 p-2 rounded-lg border">
+                <p>
+                  <strong>Employee:</strong> {confirmTarget.employee?.name || "—"}
+                </p>
+                <p>
+                  <strong>Position:</strong> {confirmTarget.employee?.position || "—"}
+                </p>
+                <p>
+                  <strong>Product:</strong> {confirmTarget.Product?.name || "—"}
+                </p>
+                <p>
+                  <strong>Month/Year:</strong> {getMonthName(confirmTarget.month)}{" "}
+                  {confirmTarget.year}
+                </p>
+              </div>
+            </div>
+          }
+          onConfirm={handleDelete}
+          onClose={() => !deleting && setConfirmTarget(null)} // overlay + cancel
+          loading={deleting}
+        />
+      )}
+
       {/* Edit Modal */}
       {showEditModal && selectedTarget && (
-  <UpdateTargetModal
-    target={selectedTarget}
-    onClose={() => setShowEditModal(false)}
-    onUpdated={async () => {
-      await refreshAfterUpdate(); // ✅ Refresh list after update
-      setShowEditModal(false);
-    }}
-  />
+        <UpdateTargetModal
+          target={selectedTarget}
+          onClose={() => setShowEditModal(false)}
+          onUpdated={async () => {
+            await refreshAfterUpdate(); // refresh after update
+            setShowEditModal(false);
+          }}
+        />
       )}
     </div>
   );
