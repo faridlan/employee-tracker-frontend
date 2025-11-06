@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { Employee } from "../types/employee";
-import { getAllEmployees } from "../services/employeeService";
+import { getAllEmployees, deleteEmployee } from "../services/employeeService"; // ✅ ADDED
 import { Link } from "react-router-dom";
+import ConfirmDialog from "../components/common/ConfirmDialog"; // ✅ ADDED
+import { useToast } from "../components/ToastProvider"; // ✅ ADDED
 
 interface Props {
   refreshTrigger: number;
@@ -12,35 +14,41 @@ const EmployeeList: React.FC<Props> = ({ refreshTrigger }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Filters
+  const { showToast } = useToast(); // ✅ ADDED
+
+  // ✅ Delete State
+  const [confirmEmployee, setConfirmEmployee] = useState<Employee | null>(null); // employee to delete
+  const [deleting, setDeleting] = useState(false);
+
+  // Filters
   const [search, setSearch] = useState("");
   const [filterOffice, setFilterOffice] = useState<string>("all");
   const [filterPosition, setFilterPosition] = useState<string>("all");
   const [filterYear, setFilterYear] = useState<number | "all">("all");
 
-  // ✅ Pagination
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
-  // Fetch employees
+  const fetchEmployees = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getAllEmployees();
+      setEmployees(data);
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+      else setError("Failed to fetch employees");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchEmployees = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getAllEmployees();
-        setEmployees(data);
-      } catch (err: unknown) {
-        if (err instanceof Error) setError(err.message);
-        else setError("Failed to fetch employees");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchEmployees();
   }, [refreshTrigger]);
 
-  // ✅ Extract filter options dynamically
+  // Filter Options
   const offices = useMemo(
     () =>
       Array.from(
@@ -51,23 +59,19 @@ const EmployeeList: React.FC<Props> = ({ refreshTrigger }) => {
 
   const positions = useMemo(
     () =>
-      Array.from(
-        new Set(employees.map((e) => e.position).filter(Boolean))
-      ),
+      Array.from(new Set(employees.map((e) => e.position).filter(Boolean))),
     [employees]
   );
 
   const entryYears = useMemo(
     () =>
       Array.from(
-        new Set(
-          employees.map((e) => new Date(e.entry_date).getFullYear())
-        )
+        new Set(employees.map((e) => new Date(e.entry_date).getFullYear()))
       ).sort((a, b) => b - a),
     [employees]
   );
 
-  // ✅ Apply filters + search
+  // Apply filters + search
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
       const matchesSearch =
@@ -90,7 +94,7 @@ const EmployeeList: React.FC<Props> = ({ refreshTrigger }) => {
     });
   }, [employees, search, filterOffice, filterPosition, filterYear]);
 
-  // ✅ Pagination logic
+  // Pagination
   const totalPages = Math.ceil(filteredEmployees.length / pageSize);
   const paginatedEmployees = filteredEmployees.slice(
     (currentPage - 1) * pageSize,
@@ -102,7 +106,29 @@ const EmployeeList: React.FC<Props> = ({ refreshTrigger }) => {
     setCurrentPage(page);
   };
 
-  // ✅ UI Rendering
+  // ✅ Handle Delete
+  const handleDelete = async () => {
+    if (!confirmEmployee) return;
+    try {
+      setDeleting(true);
+
+      await deleteEmployee(confirmEmployee.id);
+
+      showToast("Employee deleted ✅", "success");
+
+      await fetchEmployees();
+    } catch (err: unknown) {
+      showToast(
+        err instanceof Error ? err.message : "Failed to delete employee ❌",
+        "error"
+      );
+    } finally {
+      setDeleting(false);
+      setConfirmEmployee(null);
+    }
+  };
+
+  // UI
   if (loading) return <p>Loading employees...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
 
@@ -177,13 +203,14 @@ const EmployeeList: React.FC<Props> = ({ refreshTrigger }) => {
               <th className="px-4 py-2 text-left">Office</th>
               <th className="px-4 py-2 text-left">Entry Date</th>
               <th className="px-4 py-2 text-center">Targets</th>
+              <th className="px-4 py-2 text-center">Actions</th> {/* ✅ ADDED */}
             </tr>
           </thead>
           <tbody>
             {paginatedEmployees.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="text-center py-4 text-gray-500 italic"
                 >
                   No matching records found
@@ -212,6 +239,16 @@ const EmployeeList: React.FC<Props> = ({ refreshTrigger }) => {
                   <td className="px-4 py-2 text-center">
                     {emp.targets.length}
                   </td>
+
+                  {/* ✅ Delete Button */}
+                  <td className="px-4 py-2 text-center">
+                    <button
+                      onClick={() => setConfirmEmployee(emp)}
+                      className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -219,7 +256,7 @@ const EmployeeList: React.FC<Props> = ({ refreshTrigger }) => {
         </table>
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4 text-sm">
           <button
@@ -242,6 +279,41 @@ const EmployeeList: React.FC<Props> = ({ refreshTrigger }) => {
             Next
           </button>
         </div>
+      )}
+
+      {/* ✅ Confirm Delete Dialog */}
+      {confirmEmployee && (
+        <ConfirmDialog
+          title="Delete Employee"
+          message={
+            <div className="space-y-2">
+              <p className="text-sm">
+                Are you sure you want to delete this employee? This will remove them
+                from the active employee list, but their past targets will remain as
+                historical records.
+              </p>
+
+              {/* Profile-style info box */}
+              <div className="mt-3 text-sm bg-gray-50 p-3 rounded-lg border">
+                <p>
+                  <strong>Name:</strong> {confirmEmployee.name}
+                </p>
+                <p>
+                  <strong>Position:</strong> {confirmEmployee.position}
+                </p>
+                <p>
+                  <strong>Office:</strong> {confirmEmployee.office_location}
+                </p>
+                <p>
+                  <strong>Targets on Record:</strong> {confirmEmployee.targets.length}
+                </p>
+              </div>
+            </div>
+          }
+          onConfirm={handleDelete}
+          onClose={() => !deleting && setConfirmEmployee(null)}
+          loading={deleting}
+        />
       )}
     </div>
   );

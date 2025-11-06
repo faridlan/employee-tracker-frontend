@@ -21,7 +21,7 @@ const CategoryProductPage: React.FC = () => {
           className={`px-4 py-2 rounded-lg border text-sm transition
             ${
               activeTab === "category"
-                ? "bg-blue-600 text-white border-blue-600"
+                ? "bg-[#815aa5] text-white border-[#815aa5]"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
             }`}
         >
@@ -32,7 +32,7 @@ const CategoryProductPage: React.FC = () => {
           className={`px-4 py-2 rounded-lg border text-sm transition
             ${
               activeTab === "product"
-                ? "bg-blue-600 text-white border-blue-600"
+                ? "bg-[#815aa5] text-white border-[#815aa5]"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
             }`}
         >

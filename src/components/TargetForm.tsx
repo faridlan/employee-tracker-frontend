@@ -4,7 +4,7 @@ import { getAllProducts } from "../services/productService";
 import { createTarget } from "../services/targetService";
 import type { Employee } from "../types/employee";
 import type { Product } from "../types/product";
-import IDRInput from "../components/common/IDRInput"; // ✅ Add this import
+import IDRInput from "../components/common/IDRInput";
 
 interface Props {
   onCreated: () => void;
@@ -15,7 +15,7 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [employeeId, setEmployeeId] = useState("");
   const [productId, setProductId] = useState("");
-  const [nominal, setNominal] = useState(""); // formatted value
+  const [nominal, setNominal] = useState("");
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [loading, setLoading] = useState(false);
@@ -28,11 +28,11 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
   }, []);
 
   useEffect(() => {
-  if (success) {
-    const timer = setTimeout(() => setSuccess(false), 3000); // hide after 3s
-    return () => clearTimeout(timer);
-  }
-}, [success]);
+    if (success) {
+      const timer = setTimeout(() => setSuccess(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +41,7 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
     setSuccess(false);
 
     try {
-      const numericNominal = Number(nominal.replace(/\./g, "")); // ✅ convert to integer
+      const numericNominal = Number(nominal.replace(/\./g, ""));
 
       await createTarget({
         employee_id: employeeId,
@@ -66,19 +66,22 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
     }
   };
 
+  const currentYear = new Date().getFullYear();
+
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-xl shadow">
       <h2 className="text-xl font-semibold mb-4">Add New Target</h2>
+
       {error && (
         <div className="bg-red-50 border border-red-300 text-red-700 px-3 py-2 rounded-lg mb-2">
           ⚠️ {error}
         </div>
       )}
       {success && (
-  <div className="bg-green-50 border border-green-300 text-green-700 px-3 py-2 rounded-lg mb-2">
-    ✅ Target created successfully!
-  </div>
-)}
+        <div className="bg-green-50 border border-green-300 text-green-700 px-3 py-2 rounded-lg mb-2">
+          ✅ Target created successfully!
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-4">
         {/* Employee */}
@@ -117,7 +120,7 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
           </select>
         </div>
 
-        {/* Nominal (Formatted IDR) */}
+        {/* Nominal */}
         <div>
           <IDRInput value={nominal} onChange={setNominal} required />
         </div>
@@ -147,16 +150,25 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
               <option value="12">December</option>
             </select>
           </div>
+
+          {/* ✅ Year dropdown */}
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1">Year</label>
-            <input
-              type="number"
-              min={2000}
+            <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
               required
               className="w-full border rounded-lg px-3 py-2"
-            />
+            >
+              {Array.from({ length: 11 }, (_, i) => {
+                const y = currentYear - i;
+                return (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                );
+              })}
+            </select>
           </div>
         </div>
       </div>
@@ -164,7 +176,7 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
       <button
         type="submit"
         disabled={loading}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        className="mt-4 px-4 py-2 bg-[#815aa5] text-white rounded-lg hover:bg-[#A56BDB] disabled:opacity-50"
       >
         {loading ? "Saving..." : "Add Target"}
       </button>

@@ -347,8 +347,22 @@ const normalized = result.map((r) => {
     ][label - 1]
   } />
                 <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: 13 }} />
-                <Line type="monotone" dataKey="target" stroke="#2563eb" strokeWidth={2.5} name="Target" dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="achievement" stroke="#16a34a" strokeWidth={2.5} name="Achievement" dot={{ r: 3 }} />
+<Line
+  type="monotone"
+  dataKey="target"
+  stroke="#815aa5"
+  strokeWidth={2.5}
+  name="Target"
+  dot={{ r: 3 }}
+/>
+<Line
+  type="monotone"
+  dataKey="achievement"
+  stroke="#F48B28"
+  strokeWidth={2.5}
+  name="Achievement"
+  dot={{ r: 3 }}
+/>
               </LineChart>
             </ResponsiveContainer>
           </div>

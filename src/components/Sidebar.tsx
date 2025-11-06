@@ -10,6 +10,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import LogoFull from "../assets/logo-full.png";
+import LogoIcon from "../assets/logo-icon.png";
+
 interface SidebarProps {
   open: boolean;
 }
@@ -17,53 +20,147 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ open }) => {
   const [openProducts, setOpenProducts] = useState(false);
 
-  const linkStyle =
-    "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200";
-  const active = "bg-[#2f8bcc] text-white shadow";
-  const inactive =
-    "text-gray-700 hover:bg-[#92b0d2]/20 hover:text-[#2f8bcc]";
+  const baseLink =
+    "relative flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200";
 
   return (
     <aside
       className={`${
         open ? "w-64" : "w-20"
-      } bg-[#f8f9fb] h-screen shadow-md fixed top-0 left-0 flex flex-col transition-all duration-300`}
+      } bg-[#F8F6FB] h-screen shadow-md fixed top-0 left-0 flex flex-col transition-all duration-300`}
     >
-      {/* Company Logo */}
-      <div className="px-6 py-4 border-b border-[#d7d7d7] flex items-center gap-2">
-        <div className="bg-[#2f8bcc] text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
-          C
-        </div>
-        {open && <h2 className="text-lg font-bold text-[#2f8bcc]">Company</h2>}
+      {/* Logo Section */}
+      <div className="px-4 py-4 border-b border-gray-200 flex flex-col items-center">
+        {open ? (
+          <>
+            <img
+              src={LogoFull}
+              alt="Bank Galuh Logo"
+              className="w-[170px] object-contain"
+            />
+            <span className="text-[10px] text-[#815aa5] font-semibold mt-1 text-center tracking-wide">
+              PERUMDA BPR GALUH CIAMIS
+            </span>
+          </>
+        ) : (
+          <img
+            src={LogoIcon}
+            alt="Bank Galuh Icon"
+            className="w-12 h-12 object-contain"
+          />
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-        <NavLink to="/" className={({ isActive }) => `${linkStyle} ${isActive ? active : inactive}`}>
-          <Home size={18} />
-          {open && "Dashboard"}
+      <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-2">
+        {/* Dashboard */}
+        <NavLink
+          to="/"
+          className={({ isActive }) =>
+            `${baseLink} ${
+              isActive
+                ? "text-[#815aa5] bg-[#815aa5]/10"
+                : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              {/* Left Active Bar */}
+              {isActive && (
+                <span
+                  className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
+                  style={{ backgroundColor: "#9d7fc2" }}
+                />
+              )}
+              <Home size={18} />
+              {open && "Dashboard"}
+            </>
+          )}
         </NavLink>
 
-        <NavLink to="/targets" className={({ isActive }) => `${linkStyle} ${isActive ? active : inactive}`}>
-          <Target size={18} />
-          {open && "Target"}
+        {/* Target */}
+        <NavLink
+          to="/targets"
+          className={({ isActive }) =>
+            `${baseLink} ${
+              isActive
+                ? "text-[#815aa5] bg-[#815aa5]/10"
+                : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              {isActive && (
+                <span
+                  className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
+                  style={{ backgroundColor: "#9d7fc2" }}
+                />
+              )}
+              <Target size={18} />
+              {open && "Target"}
+            </>
+          )}
         </NavLink>
 
-        <NavLink to="/achievements" className={({ isActive }) => `${linkStyle} ${isActive ? active : inactive}`}>
-          <Trophy size={18} />
-          {open && "Achievement"}
+        {/* Achievement */}
+        <NavLink
+          to="/achievements"
+          className={({ isActive }) =>
+            `${baseLink} ${
+              isActive
+                ? "text-[#815aa5] bg-[#815aa5]/10"
+                : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              {isActive && (
+                <span
+                  className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
+                  style={{ backgroundColor: "#9d7fc2" }}
+                />
+              )}
+              <Trophy size={18} />
+              {open && "Achievement"}
+            </>
+          )}
         </NavLink>
 
-        <NavLink to="/employees" className={({ isActive }) => `${linkStyle} ${isActive ? active : inactive}`}>
-          <Users size={18} />
-          {open && "Employee"}
+        {/* Employee */}
+        <NavLink
+          to="/employees"
+          className={({ isActive }) =>
+            `${baseLink} ${
+              isActive
+                ? "text-[#815aa5] bg-[#815aa5]/10"
+                : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              {isActive && (
+                <span
+                  className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
+                  style={{ backgroundColor: "#9d7fc2" }}
+                />
+              )}
+              <Users size={18} />
+              {open && "Employee"}
+            </>
+          )}
         </NavLink>
 
         {/* Products Section */}
         <button
           onClick={() => setOpenProducts(!openProducts)}
-          className={`${linkStyle} w-full justify-between ${
-            openProducts ? "text-[#2f8bcc]" : inactive
+          className={`${baseLink} w-full justify-between ${
+            openProducts
+              ? "text-[#815aa5]"
+              : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
           }`}
         >
           <span className="flex items-center gap-3">
@@ -74,7 +171,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
             (openProducts ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
         </button>
 
-        {/* Submenu (only 1 item now) */}
+        {/* Submenu */}
         <div
           className={`ml-8 mt-1 space-y-1 overflow-hidden transition-all duration-300 ${
             openProducts ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
@@ -83,17 +180,31 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
           <NavLink
             to="/products-categories"
             className={({ isActive }) =>
-              `${linkStyle} ${isActive ? active : inactive}`
+              `${baseLink} ${
+                isActive
+                  ? "text-[#815aa5] bg-[#815aa5]/10"
+                  : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+              }`
             }
           >
-            {open && "Categories & Products"}
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <span
+                    className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
+                    style={{ backgroundColor: "#9d7fc2" }}
+                  />
+                )}
+                {open && "Categories & Products"}
+              </>
+            )}
           </NavLink>
         </div>
       </nav>
 
       {/* Footer */}
-      <footer className="text-center text-xs text-gray-500 py-4 border-t border-[#d7d7d7]">
-        {open ? "© 2025 Company Dashboard" : "©25"}
+      <footer className="text-center text-xs text-gray-500 py-4 border-t border-gray-200">
+        {open ? "© 2025 Bank Galuh" : "©25"}
       </footer>
     </aside>
   );

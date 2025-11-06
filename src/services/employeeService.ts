@@ -25,3 +25,28 @@ export async function getEmployeeById(id: string): Promise<Employee> {
   if (!response.ok) throw new Error("Failed to fetch employee");
   return response.json();
 }
+
+/** ✅ Update employee — returns updated employee */
+export async function updateEmployee(
+  id: string,
+  data: { name: string; position: string; office_location: string }
+): Promise<Employee> {
+  const response = await fetch(`${BASE_URL}/employees/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) throw new Error("Failed to update employee");
+  return response.json();
+}
+
+/** ✅ Soft delete employee */
+export async function deleteEmployee(id: string): Promise<{ message: string }> {
+  const response = await fetch(`${BASE_URL}/employees/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) throw new Error("Failed to delete employee");
+  return response.json();
+}
