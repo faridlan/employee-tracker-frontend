@@ -146,7 +146,7 @@ const OverallTargetAchievementChart: React.FC = () => {
 
             <YAxis
               tickFormatter={(v) => formatRp(Number(v))}
-              tick={{ fontSize: 12, fill: "#4b5563" }}
+              tick={{ fontSize: 8, fill: "#4b5563" }}
             />
 
             <Tooltip content={<CustomTooltip />} />
