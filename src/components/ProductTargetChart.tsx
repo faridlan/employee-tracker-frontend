@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { getProductTargetSummary, getAvailableYears } from "../services/analyticsService";
+import {
+  getProductTargetSummary,
+  getAvailableYears,
+} from "../services/analyticsService";
 import {
   PieChart,
   Pie,
@@ -10,15 +13,9 @@ import {
 } from "recharts";
 import type { ProductSummary } from "../types/analytics";
 
-// 🟣 Bank Galuh Brand Colors (A2 Harmonized Palette)
-const COLORS = [
-  "#815aa5", // Primary Purple
-  "#9d7fc2", // Light Purple
-  "#F48B28", // Accent Orange
-  "#bba7d6", // Soft Lilac
-  "#d8c8e8", // Pastel Lavender
-  "#f0e8f7", // Blush Purple
-];
+// 🔵 Bank Galuh Corporate Blue Palette (with smart orange accent)
+const BLUE_COLORS = ["#005BAA", "#2E6EBE", "#4C89CF", "#7FB1E3", "#A7CCED", "#C7E0F6"];
+const ORANGE = "#FF8A00";
 
 // Format number to short K/M/B format
 const formatShort = (num: number): string => {
@@ -35,7 +32,7 @@ const ProductTargetChart: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load years
+  // Load available years
   useEffect(() => {
     getAvailableYears()
       .then((years) => {
@@ -45,7 +42,7 @@ const ProductTargetChart: React.FC = () => {
       .catch(() => setAvailableYears([]));
   }, []);
 
-  // Fetch data
+  // Fetch product target summary
   useEffect(() => {
     if (!selectedYear) return;
 
@@ -76,9 +73,13 @@ const ProductTargetChart: React.FC = () => {
     value: d.total_nominal,
   }));
 
+  // Identify the highest slice
+  const highestValue = Math.max(...formattedData.map((d) => d.value));
+  const highestName = formattedData.find((d) => d.value === highestValue)?.name;
+
   return (
     <div className="bg-white p-6 rounded-xl shadow">
-      <h2 className="text-2xl font-semibold mb-4 text-[#815aa5]">
+      <h2 className="text-2xl font-semibold mb-4 text-[#005BAA]">
         📊 Product Target Distribution
       </h2>
 
@@ -109,15 +110,18 @@ const ProductTargetChart: React.FC = () => {
               nameKey="name"
               cx="50%"
               cy="50%"
-              fontSize={8}
+              fontSize={10}
               outerRadius={140}
               labelLine
               label={({ name, value }) =>
                 `${name}: ${formatShort(value as number)}`
               }
             >
-              {formattedData.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              {formattedData.map((entry, i) => (
+                <Cell
+                  key={i}
+                  fill={entry.name === highestName ? ORANGE : BLUE_COLORS[i % BLUE_COLORS.length]}
+                />
               ))}
             </Pie>
 

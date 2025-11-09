@@ -135,7 +135,7 @@ const UpdateTargetModal = ({ target, onClose, onUpdated }: UpdateTargetModalProp
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-[#815aa5] text-white rounded-lg hover:bg-[#A56BDB] disabled:opacity-50"
+              className="px-4 py-2 bg-[#005BAA] text-white rounded-lg hover:bg-[#0668C2] disabled:opacity-50"
             >
               {loading ? "Saving..." : "Save Changes"}
             </button>

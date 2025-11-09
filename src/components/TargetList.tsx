@@ -200,7 +200,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
   className={`px-4 py-2 rounded-lg border text-sm transition
     ${
       activeTab === (tab.key as "all" | "AO" | "FO")
-        ? "bg-[#815aa5] text-white border-[#815aa5]"
+        ? "bg-[#005BAA] text-white border-[#005BAA]"
         : "bg-white text-gray-700 border-gray-300 hover:bg-[#f3e9fa]"
     }`}
 >

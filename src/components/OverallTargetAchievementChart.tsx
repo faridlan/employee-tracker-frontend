@@ -12,9 +12,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// Brand Colors
-const TARGET_COLOR = "#815aa5"; // Purple
-const ACHIEVEMENT_COLOR = "#F48B28"; // Orange
+// 🔵 Bank Galuh Corporate Colors for Bar Chart
+const TARGET_COLOR = "#005BAA";      // Primary Blue
+const ACHIEVEMENT_COLOR = "#FF8A00"; // Brand Orange
 
 // Local typing for Recharts v3 tooltip props (avoids type-only import quirks)
 type TTPayload = { value?: number | string; name?: string }[];
@@ -111,7 +111,7 @@ const OverallTargetAchievementChart: React.FC = () => {
     <div className="bg-white p-6 rounded-xl shadow">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-4">
-        <h2 className="text-2xl font-semibold flex-1 text-[#815aa5]">
+        <h2 className="text-2xl font-semibold flex-1 text-[#005BAA]">
           🧮 Overall Target vs Achievement
         </h2>
 

@@ -10,8 +10,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import LogoFull from "../assets/logo-full.png";
-import LogoIcon from "../assets/logo-icon.png";
+import LogoFull from "../assets/logo-full-one-color.png";
+import LogoIcon from "../assets/logo-icon-one-color.png";
 
 interface SidebarProps {
   open: boolean;
@@ -38,9 +38,9 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
               alt="Bank Galuh Logo"
               className="w-[170px] object-contain"
             />
-            <span className="text-[10px] text-[#815aa5] font-semibold mt-1 text-center tracking-wide">
+            {/* <span className="text-[10px] text-[#005BAA] font-semibold mt-1 text-center tracking-wide">
               PERUMDA BPR GALUH CIAMIS
-            </span>
+            </span> */}
           </>
         ) : (
           <img
@@ -59,8 +59,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
           className={({ isActive }) =>
             `${baseLink} ${
               isActive
-                ? "text-[#815aa5] bg-[#815aa5]/10"
-                : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+                ? "text-[#005BAA] bg-[#0668C2]/10"
+                : "text-gray-700 hover:bg-[#0668C2]/20 hover:text-[#005BAA]"
             }`
           }
         >
@@ -70,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
               {isActive && (
                 <span
                   className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
-                  style={{ backgroundColor: "#9d7fc2" }}
+                  style={{ backgroundColor: "#005BAA" }}
                 />
               )}
               <Home size={18} />
@@ -85,17 +85,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
           className={({ isActive }) =>
             `${baseLink} ${
               isActive
-                ? "text-[#815aa5] bg-[#815aa5]/10"
-                : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+                ? "text-[#005BAA] bg-[#0668C2]/10"
+                : "text-gray-700 hover:bg-[#0668C2]/20 hover:text-[#005BAA]"
             }`
           }
         >
           {({ isActive }) => (
             <>
               {isActive && (
-                <span
+               <span
                   className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
-                  style={{ backgroundColor: "#9d7fc2" }}
+                  style={{ backgroundColor: "#005BAA" }}
                 />
               )}
               <Target size={18} />
@@ -110,17 +110,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
           className={({ isActive }) =>
             `${baseLink} ${
               isActive
-                ? "text-[#815aa5] bg-[#815aa5]/10"
-                : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+                ? "text-[#005BAA] bg-[#0668C2]/10"
+                : "text-gray-700 hover:bg-[#0668C2]/20 hover:text-[#005BAA]"
             }`
           }
         >
           {({ isActive }) => (
             <>
               {isActive && (
-                <span
+               <span
                   className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
-                  style={{ backgroundColor: "#9d7fc2" }}
+                  style={{ backgroundColor: "#005BAA" }}
                 />
               )}
               <Trophy size={18} />
@@ -135,17 +135,17 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
           className={({ isActive }) =>
             `${baseLink} ${
               isActive
-                ? "text-[#815aa5] bg-[#815aa5]/10"
-                : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+                ? "text-[#005BAA] bg-[#0668C2]/10"
+                : "text-gray-700 hover:bg-[#0668C2]/20 hover:text-[#005BAA]"
             }`
           }
         >
           {({ isActive }) => (
             <>
               {isActive && (
-                <span
+               <span
                   className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
-                  style={{ backgroundColor: "#9d7fc2" }}
+                  style={{ backgroundColor: "#005BAA" }}
                 />
               )}
               <Users size={18} />
@@ -159,8 +159,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
           onClick={() => setOpenProducts(!openProducts)}
           className={`${baseLink} w-full justify-between ${
             openProducts
-              ? "text-[#815aa5]"
-              : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
+                ? "text-[#005BAA] bg-[#0668C2]/10"
+                : "text-gray-700 hover:bg-[#0668C2]/20 hover:text-[#005BAA]"
           }`}
         >
           <span className="flex items-center gap-3">
@@ -180,20 +180,20 @@ const Sidebar: React.FC<SidebarProps> = ({ open }) => {
           <NavLink
             to="/products-categories"
             className={({ isActive }) =>
-              `${baseLink} ${
-                isActive
-                  ? "text-[#815aa5] bg-[#815aa5]/10"
-                  : "text-gray-700 hover:bg-[#815aa5]/20 hover:text-[#815aa5]"
-              }`
+            `${baseLink} ${
+              isActive
+                ? "text-[#005BAA] bg-[#0668C2]/10"
+                : "text-gray-700 hover:bg-[#0668C2]/20 hover:text-[#005BAA]"
+            }`
             }
           >
             {({ isActive }) => (
               <>
                 {isActive && (
-                  <span
-                    className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
-                    style={{ backgroundColor: "#9d7fc2" }}
-                  />
+                <span
+                  className="absolute left-0 top-0 h-full w-1.5 rounded-r-lg"
+                  style={{ backgroundColor: "#005BAA" }}
+                />
                 )}
                 {open && "Categories & Products"}
               </>

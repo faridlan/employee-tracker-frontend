@@ -209,7 +209,7 @@ const deleteProductSafe = async (id: string) => {
                         e.stopPropagation();
                         void saveCategory();
                       }}
-                      className="px-2 py-1 bg-[#815aa5] text-white rounded-lg hover:bg-[#A56BDB] flex items-center gap-1 text-sm"
+                      className="px-2 py-1 bg-[#005BAA] text-white rounded-lg hover:bg-[#0668C2] flex items-center gap-1 text-sm"
                     >
                       <Save size={14} /> Save
                     </button>

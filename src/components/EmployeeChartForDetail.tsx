@@ -350,7 +350,7 @@ const normalized = result.map((r) => {
 <Line
   type="monotone"
   dataKey="target"
-  stroke="#815aa5"
+  stroke="#005BAA"
   strokeWidth={2.5}
   name="Target"
   dot={{ r: 3 }}

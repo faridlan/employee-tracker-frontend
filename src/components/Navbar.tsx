@@ -23,7 +23,7 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   return (
 <nav
   className="flex justify-between items-center 
-  bg-linear-to-r from-[#815aa5] to-[#9d7fc2]
+  bg-linear-to-r from-[#005BAA] to-[#0668C2]
   text-white px-6 py-3 shadow-md"
 >
       {/* Sidebar Toggle */}
@@ -41,7 +41,7 @@ const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           className="flex items-center space-x-2 hover:bg-white/20 px-3 py-2 rounded-lg transition"
         >
           <img
-            src="https://ui-avatars.com/api/?name=Admin&background=815aa5&color=fff"
+            src="https://ui-avatars.com/api/?name=Admin&background=005BAA&color=fff"
             alt="User avatar"
             className="w-8 h-8 rounded-full border border-white/30"
           />
