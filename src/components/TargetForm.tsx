@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
 import { getAllEmployees } from "../services/employeeService";
 import { getAllProducts } from "../services/productService";
 import { createTarget } from "../services/targetService";
@@ -68,6 +69,17 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
 
   const currentYear = new Date().getFullYear();
 
+  // ✅ Prepare options for React Select
+  const employeeOptions = employees.map((emp) => ({
+    value: emp.id,
+    label: `${emp.name} (${emp.office_location})`,
+  }));
+
+  const productOptions = products.map((p) => ({
+    value: p.id,
+    label: p.name,
+  }));
+
   return (
     <form onSubmit={handleSubmit} className="bg-white p-4 rounded-xl shadow">
       <h2 className="text-xl font-semibold mb-4">Add New Target</h2>
@@ -84,40 +96,62 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
       )}
 
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Employee */}
+        {/* ✅ Employee (Searchable) */}
         <div>
           <label className="block text-sm font-medium mb-1">Employee</label>
-          <select
-            value={employeeId}
-            onChange={(e) => setEmployeeId(e.target.value)}
-            required
-            className="w-full border rounded-lg px-3 py-2"
-          >
-            <option value="">Select Employee</option>
-            {employees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.name} ({emp.office_location})
-              </option>
-            ))}
-          </select>
+          <Select
+            options={employeeOptions}
+            value={employeeOptions.find((opt) => opt.value === employeeId) || null}
+            onChange={(selected) => setEmployeeId(selected?.value || "")}
+            placeholder="Search Employee..."
+            isSearchable
+            styles={{
+              control: (base, state) => ({
+                ...base,
+                borderColor: "#000",
+                boxShadow: state.isFocused ? "0 0 0 1px #000" : "none",
+                "&:hover": { borderColor: "#000" },
+                borderRadius: "0.5rem",
+                padding: "2px 4px",
+                minHeight: "42px",
+              }),
+              menu: (base) => ({
+                ...base,
+                borderRadius: "0.5rem",
+                marginTop: 4,
+                zIndex: 10,
+              }),
+            }}
+          />
         </div>
 
-        {/* Product */}
+        {/* ✅ Product (Searchable) */}
         <div>
           <label className="block text-sm font-medium mb-1">Product</label>
-          <select
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            required
-            className="w-full border rounded-lg px-3 py-2"
-          >
-            <option value="">Select Product</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            options={productOptions}
+            value={productOptions.find((opt) => opt.value === productId) || null}
+            onChange={(selected) => setProductId(selected?.value || "")}
+            placeholder="Search Product..."
+            isSearchable
+            styles={{
+              control: (base, state) => ({
+                ...base,
+                borderColor: "#000",
+                boxShadow: state.isFocused ? "0 0 0 1px #000" : "none",
+                "&:hover": { borderColor: "#000" },
+                borderRadius: "0.5rem",
+                padding: "2px 4px",
+                minHeight: "42px",
+              }),
+              menu: (base) => ({
+                ...base,
+                borderRadius: "0.5rem",
+                marginTop: 4,
+                zIndex: 10,
+              }),
+            }}
+          />
         </div>
 
         {/* Nominal */}
@@ -136,22 +170,28 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
               className="w-full border rounded-lg px-3 py-2"
             >
               <option value="">Select Month</option>
-              <option value="1">January</option>
-              <option value="2">February</option>
-              <option value="3">March</option>
-              <option value="4">April</option>
-              <option value="5">May</option>
-              <option value="6">June</option>
-              <option value="7">July</option>
-              <option value="8">August</option>
-              <option value="9">September</option>
-              <option value="10">October</option>
-              <option value="11">November</option>
-              <option value="12">December</option>
+              {[
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+              ].map((m, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {m}
+                </option>
+              ))}
             </select>
           </div>
 
-          {/* ✅ Year dropdown */}
+          {/* Year dropdown */}
           <div className="flex-1">
             <label className="block text-sm font-medium mb-1">Year</label>
             <select

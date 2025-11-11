@@ -1,15 +1,19 @@
 export interface EmployeePerformance {
-  month: string | number;
+  month: string;
   year: number;
+  product_id?: string | null;
+  product_name?: string;
   target: number;
   achievement: number;
   percentage: number;
 }
 
 export interface ProductSummary {
-  product_id: string;
+  product_id: number;
   product_name: string;
   total_nominal: number;
+  month: number;
+  year: number;
 }
 
 export interface MonthlySummary {

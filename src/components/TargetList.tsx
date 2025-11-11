@@ -31,8 +31,10 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
 
   // Filters
   const [search, setSearch] = useState("");
-  const [filterYear, setFilterYear] = useState<number | "all">("all");
-  const [filterMonth, setFilterMonth] = useState<number | "all">("all");
+  const [fromYear, setFromYear] = useState<number | "all">("all");
+  const [fromMonth, setFromMonth] = useState<number | "all">("all");
+  const [toYear, setToYear] = useState<number | "all">("all");
+  const [toMonth, setToMonth] = useState<number | "all">("all");
   const [filterEmployee, setFilterEmployee] = useState<string>("all");
   const [filterProduct, setFilterProduct] = useState<string>("all");
 
@@ -68,9 +70,9 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
     if (!confirmTarget) return;
     try {
       setDeleting(true);
-      await deleteTarget(confirmTarget.id); // backend also hard-deletes achievement
+      await deleteTarget(confirmTarget.id);
       showToast("Target deleted and Achievement removed ✅", "success");
-      await refresh(); // Delete: B → always re-fetch backend
+      await refresh();
     } catch (err: unknown) {
       showToast(
         err instanceof Error ? err.message : "Failed to delete target ❌",
@@ -124,9 +126,16 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
   // Tab switch → reset filters & pagination
   const handleTabClick = (tab: "all" | "AO" | "FO") => {
     setActiveTab(tab);
+    clearFilters();
+  };
+
+  // 🔹 Clear all filters
+  const clearFilters = () => {
     setSearch("");
-    setFilterYear("all");
-    setFilterMonth("all");
+    setFromYear("all");
+    setFromMonth("all");
+    setToYear("all");
+    setToMonth("all");
     setFilterEmployee("all");
     setFilterProduct("all");
     setCurrentPage(1);
@@ -142,10 +151,22 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
         t.employee?.name?.toLowerCase().includes(search.toLowerCase()) ||
         t.Product?.name?.toLowerCase().includes(search.toLowerCase()) ||
         String(t.year).includes(search) ||
-        String(t.month).includes(search);
+        getMonthName(t.month).toLowerCase().includes(search.toLowerCase());
 
-      const matchesYear = filterYear === "all" ? true : t.year === filterYear;
-      const matchesMonth = filterMonth === "all" ? true : t.month === filterMonth;
+      // Date range filter
+      let matchesDateRange = true;
+      const targetDate = new Date(t.year, t.month - 1);
+
+      if (fromYear !== "all" && fromMonth !== "all") {
+        const fromDate = new Date(fromYear, fromMonth - 1);
+        matchesDateRange = targetDate >= fromDate;
+      }
+
+      if (toYear !== "all" && toMonth !== "all") {
+        const toDate = new Date(toYear, toMonth - 1);
+        matchesDateRange = matchesDateRange && targetDate <= toDate;
+      }
+
       const matchesEmployee =
         filterEmployee === "all" ? true : t.employee?.name === filterEmployee;
       const matchesProduct =
@@ -154,8 +175,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
       return (
         matchesTab &&
         matchesSearch &&
-        matchesYear &&
-        matchesMonth &&
+        matchesDateRange &&
         matchesEmployee &&
         matchesProduct
       );
@@ -163,8 +183,10 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
   }, [
     targets,
     search,
-    filterYear,
-    filterMonth,
+    fromYear,
+    fromMonth,
+    toYear,
+    toMonth,
     filterEmployee,
     filterProduct,
     activeTab,
@@ -194,18 +216,18 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
           { key: "AO", label: `AO (${countAO})` },
           { key: "FO", label: `FO (${countFO})` },
         ].map((tab) => (
-   <button
-  key={tab.key}
-  onClick={() => handleTabClick(tab.key as "all" | "AO" | "FO")}
-  className={`px-4 py-2 rounded-lg border text-sm transition
-    ${
-      activeTab === (tab.key as "all" | "AO" | "FO")
-        ? "bg-[#005BAA] text-white border-[#005BAA]"
-        : "bg-white text-gray-700 border-gray-300 hover:bg-[#f3e9fa]"
-    }`}
->
-  {tab.label}
-</button>
+          <button
+            key={tab.key}
+            onClick={() => handleTabClick(tab.key as "all" | "AO" | "FO")}
+            className={`px-4 py-2 rounded-lg border text-sm transition
+              ${
+                activeTab === (tab.key as "all" | "AO" | "FO")
+                  ? "bg-[#005BAA] text-white border-[#005BAA]"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-[#f3e9fa]"
+              }`}
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
 
@@ -215,7 +237,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
 
         <input
           type="text"
-          placeholder="Search employee, product, year..."
+          placeholder="Search employee, product, year, or month..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -226,70 +248,98 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-sm">
-        <select
-          value={filterYear}
-          onChange={(e) => {
-            setFilterYear(e.target.value === "all" ? "all" : Number(e.target.value));
-            setCurrentPage(1);
-          }}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="all">All Years</option>
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 text-sm">
+        {/* Date range filter */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="font-medium">From:</span>
+          <select
+            value={fromMonth}
+            onChange={(e) => setFromMonth(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Month</option>
+            {months.map((m) => (
+              <option key={m} value={m}>{getMonthName(m)}</option>
+            ))}
+          </select>
+          <select
+            value={fromYear}
+            onChange={(e) => setFromYear(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Year</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
 
-        <select
-          value={filterMonth}
-          onChange={(e) => {
-            setFilterMonth(e.target.value === "all" ? "all" : Number(e.target.value));
-            setCurrentPage(1);
-          }}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="all">All Months</option>
-          {months.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
+          <span className="mx-2 font-medium">→</span>
 
-        <select
-          value={filterEmployee}
-          onChange={(e) => {
-            setFilterEmployee(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="all">All Employees</option>
-          {employees.map((emp) => (
-            <option key={emp} value={emp}>
-              {emp}
-            </option>
-          ))}
-        </select>
+          <span className="font-medium">To:</span>
+          <select
+            value={toMonth}
+            onChange={(e) => setToMonth(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Month</option>
+            {months.map((m) => (
+              <option key={m} value={m}>{getMonthName(m)}</option>
+            ))}
+          </select>
+          <select
+            value={toYear}
+            onChange={(e) => setToYear(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Year</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
 
-        <select
-          value={filterProduct}
-          onChange={(e) => {
-            setFilterProduct(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="all">All Products</option>
-          {products.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+        {/* Employee & Product Filters + Clear Button */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <select
+            value={filterEmployee}
+            onChange={(e) => {
+              setFilterEmployee(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">All Employees</option>
+            {employees.map((emp) => (
+              <option key={emp} value={emp}>
+                {emp}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filterProduct}
+            onChange={(e) => {
+              setFilterProduct(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">All Products</option>
+            {products.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+
+          {/* 🔹 Clear Filters Button */}
+          <button
+            onClick={clearFilters}
+className="px-3 py-2 rounded-lg text-sm border border-[#005BAA] text-[#005BAA] hover:bg-[#005BAA] hover:text-white transition"
+          >
+            Clear Filters
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -398,7 +448,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
             </div>
           }
           onConfirm={handleDelete}
-          onClose={() => !deleting && setConfirmTarget(null)} // overlay + cancel
+          onClose={() => !deleting && setConfirmTarget(null)}
           loading={deleting}
         />
       )}
@@ -409,7 +459,7 @@ const TargetList: React.FC<Props> = ({ refreshTrigger }) => {
           target={selectedTarget}
           onClose={() => setShowEditModal(false)}
           onUpdated={async () => {
-            await refreshAfterUpdate(); // refresh after update
+            await refreshAfterUpdate();
             setShowEditModal(false);
           }}
         />

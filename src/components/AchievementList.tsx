@@ -14,13 +14,15 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Tabs (same as TargetList)
+  // Tabs
   const [activeTab, setActiveTab] = useState<"all" | "AO" | "FO">("all");
 
   // Filters
   const [search, setSearch] = useState("");
-  const [filterYear, setFilterYear] = useState<number | "all">("all");
-  const [filterMonth, setFilterMonth] = useState<number | "all">("all");
+  const [fromYear, setFromYear] = useState<number | "all">("all");
+  const [fromMonth, setFromMonth] = useState<number | "all">("all");
+  const [toYear, setToYear] = useState<number | "all">("all");
+  const [toMonth, setToMonth] = useState<number | "all">("all");
   const [filterEmployee, setFilterEmployee] = useState<string>("all");
   const [filterProduct, setFilterProduct] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "achieved" | "not">("all");
@@ -29,7 +31,7 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
-  // Fetch
+  // Fetch achievements
   const refresh = async () => {
     setLoading(true);
     setError(null);
@@ -87,24 +89,31 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
     [achievements]
   );
 
-  // Tab counts (based on all achievements, like TargetList)
+  // Tab counts
   const countAll = achievements.length;
   const countAO = achievements.filter((a) => a.target?.employee?.position === "AO").length;
   const countFO = achievements.filter((a) => a.target?.employee?.position === "FO").length;
 
-  // Tab switch → reset filters & pagination
-  const handleTabClick = (tab: "all" | "AO" | "FO") => {
-    setActiveTab(tab);
+  // Clear all filters
+  const clearFilters = () => {
     setSearch("");
-    setFilterYear("all");
-    setFilterMonth("all");
+    setFromYear("all");
+    setFromMonth("all");
+    setToYear("all");
+    setToMonth("all");
     setFilterEmployee("all");
     setFilterProduct("all");
     setFilterStatus("all");
     setCurrentPage(1);
   };
 
-  // Apply Tabs + Filters + Search
+  // Tab switch → reset filters
+  const handleTabClick = (tab: "all" | "AO" | "FO") => {
+    setActiveTab(tab);
+    clearFilters();
+  };
+
+  // Apply Filters
   const filteredAchievements = useMemo(() => {
     return achievements.filter((a) => {
       const empPos = a.target?.employee?.position;
@@ -117,16 +126,28 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
         a.target?.employee?.name?.toLowerCase().includes(search.toLowerCase()) ||
         a.target?.Product?.name?.toLowerCase().includes(search.toLowerCase()) ||
         String(a.target?.year ?? "").includes(search) ||
-        String(a.target?.month ?? "").includes(search);
+        getMonthName(a.target?.month ?? 0).toLowerCase().includes(search.toLowerCase());
 
-      const matchesYear = filterYear === "all" ? true : a.target?.year === filterYear;
-      const matchesMonth =
-        filterMonth === "all" ? true : a.target?.month === filterMonth;
+      // Date range
+      let matchesDateRange = true;
+      if (a.target?.year && a.target?.month) {
+        const targetDate = new Date(a.target.year, a.target.month - 1);
+
+        if (fromYear !== "all" && fromMonth !== "all") {
+          const fromDate = new Date(fromYear, fromMonth - 1);
+          matchesDateRange = targetDate >= fromDate;
+        }
+
+        if (toYear !== "all" && toMonth !== "all") {
+          const toDate = new Date(toYear, toMonth - 1);
+          matchesDateRange = matchesDateRange && targetDate <= toDate;
+        }
+      }
+
       const matchesEmployee =
         filterEmployee === "all" ? true : a.target?.employee?.name === filterEmployee;
       const matchesProduct =
         filterProduct === "all" ? true : a.target?.Product?.name === filterProduct;
-
       const matchesStatus =
         filterStatus === "all"
           ? true
@@ -137,8 +158,7 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
       return (
         matchesTab &&
         matchesSearch &&
-        matchesYear &&
-        matchesMonth &&
+        matchesDateRange &&
         matchesEmployee &&
         matchesProduct &&
         matchesStatus
@@ -148,8 +168,10 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
     achievements,
     activeTab,
     search,
-    filterYear,
-    filterMonth,
+    fromYear,
+    fromMonth,
+    toYear,
+    toMonth,
     filterEmployee,
     filterProduct,
     filterStatus,
@@ -173,7 +195,7 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
 
   return (
     <div className="bg-white p-6 rounded-xl shadow">
-      {/* Tabs (same as TargetList) */}
+      {/* Tabs */}
       <div className="flex gap-2 mb-4">
         {[
           { key: "all", label: `All (${countAll})` },
@@ -184,11 +206,11 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
             key={tab.key}
             onClick={() => handleTabClick(tab.key as "all" | "AO" | "FO")}
             className={`px-4 py-2 rounded-lg border text-sm transition
-    ${
-      activeTab === (tab.key as "all" | "AO" | "FO")
-        ? "bg-[#005BAA] text-white border-[#005BAA]"
-        : "bg-white text-gray-700 border-gray-300 hover:bg-[#f3e9fa]"
-    }`}
+              ${
+                activeTab === (tab.key as "all" | "AO" | "FO")
+                  ? "bg-[#005BAA] text-white border-[#005BAA]"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-[#f3e9fa]"
+              }`}
           >
             {tab.label}
           </button>
@@ -201,7 +223,7 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
 
         <input
           type="text"
-          placeholder="Search employee, product, year..."
+          placeholder="Search employee, product, year, or month..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -212,88 +234,106 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4 text-sm">
-        {/* Year */}
-        <select
-          value={filterYear}
-          onChange={(e) => {
-            setFilterYear(e.target.value === "all" ? "all" : Number(e.target.value));
-            setCurrentPage(1);
-          }}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="all">All Years</option>
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 text-sm">
+        {/* Date range filter */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="font-medium">From:</span>
+          <select
+            value={fromMonth}
+            onChange={(e) => setFromMonth(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Month</option>
+            {months.map((m) => (
+              <option key={m} value={m}>{getMonthName(m)}</option>
+            ))}
+          </select>
+          <select
+            value={fromYear}
+            onChange={(e) => setFromYear(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Year</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
 
-        {/* Month */}
-        <select
-          value={filterMonth}
-          onChange={(e) => {
-            setFilterMonth(e.target.value === "all" ? "all" : Number(e.target.value));
-            setCurrentPage(1);
-          }}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="all">All Months</option>
-          {months.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
+          <span className="mx-2 font-medium">→</span>
 
-        {/* Employee */}
-        <select
-          value={filterEmployee}
-          onChange={(e) => {
-            setFilterEmployee(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="all">All Employees</option>
-          {employees.map((emp) => (
-            <option key={emp} value={emp}>
-              {emp}
-            </option>
-          ))}
-        </select>
+          <span className="font-medium">To:</span>
+          <select
+            value={toMonth}
+            onChange={(e) => setToMonth(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Month</option>
+            {months.map((m) => (
+              <option key={m} value={m}>{getMonthName(m)}</option>
+            ))}
+          </select>
+          <select
+            value={toYear}
+            onChange={(e) => setToYear(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Year</option>
+            {years.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
 
-        {/* Product */}
-        <select
-          value={filterProduct}
-          onChange={(e) => {
-            setFilterProduct(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="all">All Products</option>
-          {products.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
+        {/* Other Filters + Clear Button */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <select
+            value={filterEmployee}
+            onChange={(e) => {
+              setFilterEmployee(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">All Employees</option>
+            {employees.map((emp) => (
+              <option key={emp} value={emp}>{emp}</option>
+            ))}
+          </select>
 
-        {/* ✅ NEW Status Filter */}
-        <select
-          value={filterStatus}
-          onChange={(e) => {
-            setFilterStatus(e.target.value as "all" | "achieved" | "not");
-            setCurrentPage(1);
-          }}
-          className="border rounded-lg px-3 py-2"
-        >
-          <option value="all">All Status</option>
-          <option value="achieved">Achieved</option>
-          <option value="not">Not Achieved</option>
-        </select>
+          <select
+            value={filterProduct}
+            onChange={(e) => {
+              setFilterProduct(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">All Products</option>
+            {products.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => {
+              setFilterStatus(e.target.value as "all" | "achieved" | "not");
+              setCurrentPage(1);
+            }}
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">All Status</option>
+            <option value="achieved">Achieved</option>
+            <option value="not">Not Achieved</option>
+          </select>
+
+          <button
+            onClick={clearFilters}
+            className="px-3 py-2 rounded-lg text-sm border border-[#005BAA] text-[#005BAA] hover:bg-[#005BAA] hover:text-white transition"
+          >
+            Clear Filters
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -341,7 +381,6 @@ const AchievementList: React.FC<Props> = ({ refreshTrigger }) => {
                       Rp {a.nominal.toLocaleString("id-ID")}
                     </td>
 
-                    {/* Status */}
                     <td className="px-4 py-2 text-center">
                       {achieved ? (
                         <span className="flex items-center justify-center gap-1 text-green-600 font-medium">

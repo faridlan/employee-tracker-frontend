@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   LineChart,
   Line,
@@ -11,46 +11,38 @@ import {
 } from "recharts";
 import type { TooltipProps } from "recharts";
 import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
-import { getEmployeePerformance, getAvailableYears } from "../services/analyticsService";
 import getMonthName from "../helper/month";
-import type { EmployeePerformance } from "../types/analytics";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import type { Target } from "../types/target";
+import { motion } from "framer-motion";
 
 interface Props {
   employeeId: string;
   employeeName: string;
   employeePosition: string;
   entryDate: string;
+  filteredTargets: Target[];
 }
 
 interface ChartDataPoint {
   month: number;
-  year: number;
   target: number;
   achievement: number;
-  percentage?: number;
+  percentage: number;
 }
 
-// ✅ Fix for Recharts Tooltip typing gaps
+// ✅ Custom Tooltip
 interface FixedTooltipProps extends TooltipProps<ValueType, NameType> {
   payload?: { dataKey: string; value: number }[];
   label?: string | number;
 }
 
-// ✅ Strongly Typed Custom Tooltip
 const CustomTooltip: React.FC<FixedTooltipProps> = ({ active, payload, label }) => {
   if (!active || !payload || payload.length === 0) return null;
 
   const target = payload.find((p) => p.dataKey === "target")?.value ?? 0;
   const achievement = payload.find((p) => p.dataKey === "achievement")?.value ?? 0;
   const percentage = target > 0 ? ((achievement / target) * 100).toFixed(2) : "0.00";
-
-  const monthName =
-    [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December",
-    ][Number(label) - 1];
+  const monthName = getMonthName(Number(label));
 
   const diff = achievement - target;
   const diffColor = diff >= 0 ? "#16a34a" : "#dc2626";
@@ -85,179 +77,62 @@ const CustomTooltip: React.FC<FixedTooltipProps> = ({ active, payload, label }) 
 };
 
 const EmployeeChartForDetail: React.FC<Props> = ({
-  employeeId,
+  filteredTargets,
   employeeName,
-  employeePosition,
-  entryDate,
 }) => {
-  const chartRef = useRef<HTMLDivElement>(null);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
 
-  const [data, setData] = useState<ChartDataPoint[]>([]);
-  const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [selectedYear, setSelectedYear] = useState<number | undefined>();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // 🧮 Aggregate data by month
+  const aggregatedData = useMemo(() => {
+    const monthMap = new Map<number, { target: number; achievement: number }>();
 
-  const COMPANY_NAME = "Perumda Galuh Ciamis";
-
-  // 🧩 Load available years
-  useEffect(() => {
-    const fetchYears = async () => {
-      try {
-        const years = await getAvailableYears();
-        setAvailableYears(years);
-        setSelectedYear(years[years.length - 1]);
-      } catch {
-        setAvailableYears([]);
-      }
-    };
-    fetchYears();
-  }, []);
-
-  // 🧩 Load performance data
-  useEffect(() => {
-    if (!employeeId || !selectedYear) return;
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const result: EmployeePerformance[] = await getEmployeePerformance(employeeId, selectedYear);
-        const normalized: ChartDataPoint[] = result.map((r) => {
-          const monthStr = String(r.month);
-          const monthNumber = monthStr.includes("-")
-            ? Number(monthStr.split("-")[1])
-            : Number(monthStr);
-
-          const target = r.target ?? 0;
-          const achievement = r.achievement ?? 0;
-          const percentage = target > 0 ? (achievement / target) * 100 : 0;
-
-          return { month: monthNumber, year: r.year, target, achievement, percentage };
-        });
-
-        normalized.sort((a, b) => a.month - b.month);
-        setData(normalized);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Failed to fetch performance data");
-        setData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [employeeId, selectedYear]);
-
-  // 📸 Export as PNG or PDF
-  const handleDownloadChart = async (type: "png" | "pdf") => {
-    if (!chartRef.current) return;
-
-    try {
-      const node = chartRef.current;
-      const scale = 2;
-
-      const canvas = await html2canvas(node, {
-        backgroundColor: "#ffffff",
-        scale,
-        useCORS: true,
+    filteredTargets.forEach((t) => {
+      const month = t.month;
+      const existing = monthMap.get(month) || { target: 0, achievement: 0 };
+      monthMap.set(month, {
+        target: existing.target + (t.nominal ?? 0),
+        achievement:
+          existing.achievement + (t.Achievement?.nominal ?? 0),
       });
+    });
 
-      const imgData = canvas.toDataURL("image/png");
-      const fileName = `employee_performance_${employeeId}_${selectedYear}_${Date.now()}`;
+    return Array.from(monthMap.entries())
+      .map(([month, { target, achievement }]) => ({
+        month,
+        target,
+        achievement,
+        percentage: target > 0 ? (achievement / target) * 100 : 0,
+      }))
+      .sort((a, b) => a.month - b.month);
+  }, [filteredTargets]);
 
-      if (type === "png") {
-        const link = document.createElement("a");
-        link.href = imgData;
-        link.download = `${fileName}.png`;
-        link.click();
-      } else {
-        const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const imgWidth = pageWidth - 60;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        // 🏢 Header
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(20);
-        pdf.text(COMPANY_NAME, 30, 40);
-
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(14);
-        pdf.text(`Employee Performance Report (${selectedYear})`, 30, 65);
-
-        // Employee info
-        pdf.setFontSize(12);
-        const infoStartY = 95;
-        pdf.text(`Name: ${employeeName}`, 30, infoStartY);
-        pdf.text(`Position: ${employeePosition}`, 30, infoStartY + 18);
-        pdf.text(
-          `Entry Date: ${new Date(entryDate).toLocaleDateString("id-ID")}`,
-          30,
-          infoStartY + 36
-        );
-
-        const infoBottomY = infoStartY + 50;
-        pdf.addImage(imgData, "PNG", 30, infoBottomY + 20, imgWidth, imgHeight);
-        pdf.save(`${fileName}.pdf`);
-      }
-    } catch (error) {
-      console.error("Export failed:", error);
-    }
-  };
+  // 🌀 Animate transitions
+  useEffect(() => {
+    setChartData(aggregatedData);
+  }, [aggregatedData]);
 
   return (
-    <div className="p-4 sm:p-8 bg-gray-50">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">
-        Employee Performance Dashboard
-      </h1>
-
+    <motion.div
+      className="p-4 sm:p-8 bg-gray-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
       <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-        {/* Header Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-3 sm:mb-0">
-            📈 Performance Chart
-          </h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                Year:
-              </label>
-              <select
-                value={selectedYear ?? ""}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                disabled={availableYears.length === 0 || loading}
-              >
-                {availableYears.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+          📈 {employeeName}'s Performance Chart
+        </h2>
 
-            <button
-              onClick={() => handleDownloadChart("png")}
-              disabled={loading || data.length === 0}
-              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-3 rounded-lg text-sm disabled:opacity-50"
-            >
-              📤 PNG
-            </button>
-
-            <button
-              onClick={() => handleDownloadChart("pdf")}
-              disabled={loading || data.length === 0}
-              className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 rounded-lg text-sm disabled:opacity-50"
-            >
-              🧾 PDF
-            </button>
-          </div>
-        </div>
-
-        {/* Chart */}
-        {!loading && !error && data.length > 0 && (
-          <div ref={chartRef} className="chart-container bg-white rounded-lg p-2">
+        {chartData.length > 0 ? (
+          <motion.div
+            key={chartData.map((d) => `${d.month}-${d.target}`).join(",")}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="chart-container bg-white rounded-lg p-2"
+          >
             <ResponsiveContainer width="100%" height={360}>
-              <LineChart data={data}>
+              <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis
                   dataKey="month"
@@ -278,6 +153,8 @@ const EmployeeChartForDetail: React.FC<Props> = ({
                   strokeWidth={2.5}
                   name="Target"
                   dot={{ r: 3 }}
+                  isAnimationActive={true}
+                  animationDuration={800}
                 />
                 <Line
                   type="monotone"
@@ -286,13 +163,17 @@ const EmployeeChartForDetail: React.FC<Props> = ({
                   strokeWidth={2.5}
                   name="Achievement"
                   dot={{ r: 3 }}
+                  isAnimationActive={true}
+                  animationDuration={800}
                 />
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          </motion.div>
+        ) : (
+          <p className="text-gray-500 text-sm">No data available for current filters.</p>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 

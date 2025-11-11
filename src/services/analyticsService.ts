@@ -5,12 +5,20 @@ const BASE_URL = "/api";
 
 export async function getEmployeePerformance(
   employeeId: string,
-  year?: number
+  year?: number,
+  productId?: string // 🆕 optional product filter
 ): Promise<EmployeePerformance[]> {
-  const url = year
-    ? `${BASE_URL}/analytics/employee/${employeeId}/performance?year=${year}`
-    : `${BASE_URL}/analytics/employee/${employeeId}/performance`;
+  // 🧭 Build query parameters dynamically
+  const params = new URLSearchParams();
+  if (year !== undefined) params.append("year", String(year));
+  if (productId !== undefined) params.append("productId", productId);
 
+  // 🧱 Construct the full URL
+  const url = `${BASE_URL}/analytics/employee/${employeeId}/performance${
+    params.toString() ? `?${params.toString()}` : ""
+  }`;
+
+  // 🚀 Fetch data
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch employee performance");
   return res.json();
