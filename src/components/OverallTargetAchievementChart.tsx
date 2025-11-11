@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { getOverallMonthlySummary, getAvailableYears } from "../services/analyticsService";
+import {
+  getOverallMonthlySummary,
+  getAvailableYears,
+} from "../services/analyticsService";
 import type { MonthlySummary } from "../types/analytics";
 import {
   BarChart,
@@ -9,32 +12,39 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  Line,
   ResponsiveContainer,
 } from "recharts";
 
-// 🔵 Bank Galuh Corporate Colors for Bar Chart
-const TARGET_COLOR = "#005BAA";      // Primary Blue
-const ACHIEVEMENT_COLOR = "#FF8A00"; // Brand Orange
+// 🎨 Corporate Colors
+const TARGET_COLOR = "#005BAA"; // Blue
+const ACHIEVEMENT_COLOR = "#FF8A00"; // Orange
+const PERCENTAGE_COLOR = "#16a34a"; // Green
 
-// Local typing for Recharts v3 tooltip props (avoids type-only import quirks)
-type TTPayload = { value?: number | string; name?: string }[];
+// Local typing for tooltip
+type TTPayload = { value?: number | string; name?: string; dataKey?: string }[];
 interface TTProps {
   active?: boolean;
   payload?: TTPayload;
   label?: number | string;
 }
 
-// Format Rp (Indonesian)
+// Format Rp
 const formatRp = (value: number) => `Rp ${value.toLocaleString("id-ID")}`;
 
-// Custom Tooltip (Arrow + Color + +/-)
+// Custom Tooltip with percentage
 const CustomTooltip = ({ active, payload, label }: TTProps) => {
-  if (!active || !payload || payload.length < 2) return null;
+  if (!active || !payload || payload.length === 0) return null;
 
-  const target = Number(payload[0]?.value ?? 0);
-  const achievement = Number(payload[1]?.value ?? 0);
+  const target = Number(payload.find((p) => p.dataKey === "target")?.value ?? 0);
+  const achievement = Number(
+    payload.find((p) => p.dataKey === "achievement")?.value ?? 0
+  );
+  const percentage = Number(
+    payload.find((p) => p.dataKey === "percentage")?.value ?? 0
+  );
+
   const diff = achievement - target;
-
   const isPositive = diff >= 0;
   const arrow = isPositive ? "↑" : "↓";
   const diffColor = isPositive ? "#16a34a" : "#dc2626"; // green / red
@@ -42,8 +52,20 @@ const CustomTooltip = ({ active, payload, label }: TTProps) => {
 
   const monthIndex = Number(label);
   const monthName =
-    ["January","February","March","April","May","June",
-     "July","August","September","October","November","December"][monthIndex - 1] ?? String(label);
+    [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ][monthIndex - 1] ?? String(label);
 
   return (
     <div
@@ -60,9 +82,19 @@ const CustomTooltip = ({ active, payload, label }: TTProps) => {
         Target: <span style={{ fontWeight: 500 }}>{formatRp(target)}</span>
       </p>
       <p style={{ margin: 0, fontSize: 13 }}>
-        Achievement: <span style={{ fontWeight: 500 }}>{formatRp(achievement)}</span>
+        Achievement:{" "}
+        <span style={{ fontWeight: 500 }}>
+          {formatRp(achievement)} ({percentage.toFixed(2)}%)
+        </span>
       </p>
-      <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: diffColor }}>
+      <p
+        style={{
+          margin: "6px 0 0",
+          fontSize: 13,
+          fontWeight: 600,
+          color: diffColor,
+        }}
+      >
         {arrow} {diffSign} {formatRp(Math.abs(diff))}
       </p>
     </div>
@@ -72,7 +104,9 @@ const CustomTooltip = ({ active, payload, label }: TTProps) => {
 const OverallTargetAchievementChart: React.FC = () => {
   const [data, setData] = useState<MonthlySummary[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
+  const [selectedYear, setSelectedYear] = useState<number | undefined>(
+    undefined
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,7 +129,9 @@ const OverallTargetAchievementChart: React.FC = () => {
         const result = await getOverallMonthlySummary(selectedYear);
         setData(result);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Failed to fetch summary data");
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch summary data"
+        );
       } finally {
         setLoading(false);
       }
@@ -132,21 +168,46 @@ const OverallTargetAchievementChart: React.FC = () => {
       {data.length === 0 ? (
         <p className="text-gray-500">No data available.</p>
       ) : (
-        <ResponsiveContainer width="100%" height={420}>
+        <ResponsiveContainer width="100%" height={440}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
 
+            {/* Month axis */}
             <XAxis
               dataKey="month"
               tickFormatter={(m) =>
-                ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]
+                [
+                  "Jan",
+                  "Feb",
+                  "Mar",
+                  "Apr",
+                  "May",
+                  "Jun",
+                  "Jul",
+                  "Aug",
+                  "Sep",
+                  "Oct",
+                  "Nov",
+                  "Dec",
+                ][m - 1]
               }
               tick={{ fontSize: 12, fill: "#4b5563" }}
             />
 
+            {/* Left Y-axis (Rp) */}
             <YAxis
+              yAxisId="left"
               tickFormatter={(v) => formatRp(Number(v))}
               tick={{ fontSize: 8, fill: "#4b5563" }}
+            />
+
+            {/* Right Y-axis (Percentage) */}
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tickFormatter={(v) => `${v}%`}
+              tick={{ fontSize: 10, fill: PERCENTAGE_COLOR }}
+              domain={[0, "auto"]}
             />
 
             <Tooltip content={<CustomTooltip />} />
@@ -157,8 +218,23 @@ const OverallTargetAchievementChart: React.FC = () => {
               wrapperStyle={{ fontSize: 13, marginTop: 10 }}
             />
 
-            <Bar dataKey="target" fill={TARGET_COLOR} name="Target" />
-            <Bar dataKey="achievement" fill={ACHIEVEMENT_COLOR} name="Achievement" />
+            {/* Bars */}
+            <Bar yAxisId="left" dataKey="target" fill={TARGET_COLOR} name="Target" />
+            <Bar
+              yAxisId="left"
+              dataKey="achievement"
+              fill={ACHIEVEMENT_COLOR}
+              name="Achievement"
+            />
+
+            {/* Percentage line */}
+<Line
+  dataKey="percentage"
+  stroke="transparent"
+  dot={false}
+  activeDot={false}
+  legendType="none"
+/>
           </BarChart>
         </ResponsiveContainer>
       )}

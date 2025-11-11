@@ -122,7 +122,7 @@ const TargetForm: React.FC<Props> = ({ onCreated }) => {
 
         {/* Nominal */}
         <div>
-          <IDRInput value={nominal} onChange={setNominal} required />
+          <IDRInput label={"Nominal Target"} value={nominal} onChange={setNominal} required />
         </div>
 
         {/* Month & Year */}

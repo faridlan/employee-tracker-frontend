@@ -9,6 +9,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import type { TooltipProps } from "recharts";
+import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import { getEmployeePerformance, getAvailableYears } from "../services/analyticsService";
 import getMonthName from "../helper/month";
 import type { EmployeePerformance } from "../types/analytics";
@@ -19,7 +21,7 @@ interface Props {
   employeeId: string;
   employeeName: string;
   employeePosition: string;
-  entryDate: string,
+  entryDate: string;
 }
 
 interface ChartDataPoint {
@@ -30,19 +32,73 @@ interface ChartDataPoint {
   percentage?: number;
 }
 
-const EmployeeChartForDetail: React.FC<Props> = ({   employeeId,
+// ✅ Fix for Recharts Tooltip typing gaps
+interface FixedTooltipProps extends TooltipProps<ValueType, NameType> {
+  payload?: { dataKey: string; value: number }[];
+  label?: string | number;
+}
+
+// ✅ Strongly Typed Custom Tooltip
+const CustomTooltip: React.FC<FixedTooltipProps> = ({ active, payload, label }) => {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const target = payload.find((p) => p.dataKey === "target")?.value ?? 0;
+  const achievement = payload.find((p) => p.dataKey === "achievement")?.value ?? 0;
+  const percentage = target > 0 ? ((achievement / target) * 100).toFixed(2) : "0.00";
+
+  const monthName =
+    [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December",
+    ][Number(label) - 1];
+
+  const diff = achievement - target;
+  const diffColor = diff >= 0 ? "#16a34a" : "#dc2626";
+  const diffSymbol = diff >= 0 ? "↑" : "↓";
+
+  return (
+    <div
+      style={{
+        background: "white",
+        padding: "10px 14px",
+        borderRadius: 8,
+        border: "1px solid #e5e7eb",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+        minWidth: 180,
+      }}
+    >
+      <p style={{ margin: 0, fontWeight: 600, color: "#374151" }}>{monthName}</p>
+      <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+        🎯 Target: <strong>Rp {Number(target).toLocaleString("id-ID")}</strong>
+      </p>
+      <p style={{ margin: 0, fontSize: 13 }}>
+        🏆 Achievement: <strong>Rp {Number(achievement).toLocaleString("id-ID")}</strong>
+      </p>
+      <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+        📊 Achievement Rate: <strong>{percentage}%</strong>
+      </p>
+      <p style={{ margin: "6px 0 0", fontSize: 13, color: diffColor }}>
+        {diffSymbol} Rp {Math.abs(diff).toLocaleString("id-ID")}
+      </p>
+    </div>
+  );
+};
+
+const EmployeeChartForDetail: React.FC<Props> = ({
+  employeeId,
   employeeName,
   employeePosition,
-  entryDate, }) => {
+  entryDate,
+}) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
+  const [selectedYear, setSelectedYear] = useState<number | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const COMPANY_NAME = "Nexira Sales Corp";
+  const COMPANY_NAME = "Perumda Galuh Ciamis";
 
   // 🧩 Load available years
   useEffect(() => {
@@ -66,19 +122,19 @@ const EmployeeChartForDetail: React.FC<Props> = ({   employeeId,
       setError(null);
       try {
         const result: EmployeePerformance[] = await getEmployeePerformance(employeeId, selectedYear);
-const normalized = result.map((r) => {
-  const monthStr = String(r.month);
-  const monthNumber = monthStr.includes("-")
-    ? Number(monthStr.split("-")[1])
-    : Number(monthStr);
+        const normalized: ChartDataPoint[] = result.map((r) => {
+          const monthStr = String(r.month);
+          const monthNumber = monthStr.includes("-")
+            ? Number(monthStr.split("-")[1])
+            : Number(monthStr);
 
-  return {
-    month: monthNumber,
-    year: r.year,
-    target: r.target,
-    achievement: r.achievement,
-  };
-}) as ChartDataPoint[];
+          const target = r.target ?? 0;
+          const achievement = r.achievement ?? 0;
+          const percentage = target > 0 ? (achievement / target) * 100 : 0;
+
+          return { month: monthNumber, year: r.year, target, achievement, percentage };
+        });
+
         normalized.sort((a, b) => a.month - b.month);
         setData(normalized);
       } catch (err: unknown) {
@@ -91,12 +147,9 @@ const normalized = result.map((r) => {
     fetchData();
   }, [employeeId, selectedYear]);
 
-  // 📸 Export as PNG or PDF with simple header
+  // 📸 Export as PNG or PDF
   const handleDownloadChart = async (type: "png" | "pdf") => {
-    if (!chartRef.current) {
-      console.error("Chart reference not found.");
-      return;
-    }
+    if (!chartRef.current) return;
 
     try {
       const node = chartRef.current;
@@ -106,8 +159,6 @@ const normalized = result.map((r) => {
         backgroundColor: "#ffffff",
         scale,
         useCORS: true,
-        logging: false,
-        foreignObjectRendering: false,
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -119,126 +170,34 @@ const normalized = result.map((r) => {
         link.download = `${fileName}.png`;
         link.click();
       } else {
-        const pdf = new jsPDF({
-    orientation: "landscape",
-    unit: "px",
-    format: "a4",
-  });
+        const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const imgWidth = pageWidth - 60;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const imgWidth = pageWidth - 60;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        // 🏢 Header
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(20);
+        pdf.text(COMPANY_NAME, 30, 40);
 
-  // ===== 🏢 Company & Report Header =====
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(20);
-  pdf.text(COMPANY_NAME, 30, 40);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(14);
+        pdf.text(`Employee Performance Report (${selectedYear})`, 30, 65);
 
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(14);
-  pdf.text(`Employee Performance Report (${selectedYear})`, 30, 65);
+        // Employee info
+        pdf.setFontSize(12);
+        const infoStartY = 95;
+        pdf.text(`Name: ${employeeName}`, 30, infoStartY);
+        pdf.text(`Position: ${employeePosition}`, 30, infoStartY + 18);
+        pdf.text(
+          `Entry Date: ${new Date(entryDate).toLocaleDateString("id-ID")}`,
+          30,
+          infoStartY + 36
+        );
 
-  // --- Divider ---
-  pdf.setDrawColor(180, 180, 180);
-  pdf.setLineWidth(1);
-  pdf.line(30, 75, pageWidth - 30, 75);
-
-  // ===== 🧑‍💼 Employee Information =====
-  pdf.setFontSize(12);
-  const infoStartY = 95;
-  pdf.text(`Name: ${employeeName}`, 30, infoStartY);
-  pdf.text(`Position: ${employeePosition}`, 30, infoStartY + 18);
-  pdf.text(
-    `Entry Date: ${new Date(entryDate).toLocaleDateString("id-ID")}`,
-    30,
-    infoStartY + 36
-  );
-
-  // --- Divider ---
-  const infoBottomY = infoStartY + 50;
-  pdf.setDrawColor(200, 200, 200);
-  pdf.setLineWidth(0.8);
-  pdf.line(30, infoBottomY, pageWidth - 30, infoBottomY);
-
-  // ===== 📊 Chart Image =====
-  const chartYStart = infoBottomY + 20;
-  pdf.addImage(imgData, "PNG", 30, chartYStart, imgWidth, imgHeight);
-
-  // ===== 📝 PAGE 2: Employee Targets Table =====
-  pdf.addPage();
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(16);
-  pdf.text("Employee Targets Overview", 30, 40);
-
-  const headers = ["Month", "Year", "Target", "Achieve", "%"];
-  const colWidths = [90, 60, 130, 130, 60];
-  const startX = 30;
-  let y = 70;
-
-  // Table Header
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(12);
-  let x = startX;
-  headers.forEach((h, i) => {
-    pdf.text(h, x, y);
-    x += colWidths[i];
-  });
-
-  // Draw line under header
-  y += 8;
-  pdf.setDrawColor(0);
-  pdf.setLineWidth(0.5);
-  pdf.line(startX, y, startX + colWidths.reduce((a, b) => a + b), y);
-
-  // Table Rows
-  pdf.setFont("helvetica", "normal");
-  y += 20;
-
-  const rowHeight = 24;
-
-  data.forEach((row) => {
-    if (y > pageHeight - 60) {
-      pdf.addPage();
-      y = 60; // reset Y for new page
-    }
-
-    const achievement = row.achievement || 0;
-    const percent = row.target ? ((achievement / row.target) * 100).toFixed(1) : "-";
-
-    let xRow = startX;
-    pdf.text(getMonthName(row.month), xRow, y);
-    xRow += colWidths[0];
-
-    pdf.text(String(row.year), xRow, y);
-    xRow += colWidths[1];
-
-    pdf.text(`Rp ${row.target.toLocaleString("id-ID")}`, xRow, y);
-    xRow += colWidths[2];
-
-    pdf.text(`Rp ${achievement.toLocaleString("id-ID")}`, xRow, y);
-    xRow += colWidths[3];
-
-    pdf.text(`${percent}%`, xRow, y);
-
-    // Row separator
-    y += rowHeight;
-    pdf.setDrawColor(220, 220, 220);
-    pdf.setLineWidth(0.4);
-    pdf.line(startX, y - 16, startX + colWidths.reduce((a, b) => a + b), y - 16);
-  });
-
-  // Footer Timestamp
-  pdf.setFont("helvetica", "italic");
-  pdf.setFontSize(10);
-  pdf.setTextColor("#555");
-  const generatedAt = new Date().toLocaleString("id-ID");
-  pdf.text(`Generated on: ${generatedAt}`, pageWidth - 30, pageHeight - 20, {
-    align: "right",
-  });
-
-  pdf.save(`${fileName}.pdf`);
+        const infoBottomY = infoStartY + 50;
+        pdf.addImage(imgData, "PNG", 30, infoBottomY + 20, imgWidth, imgHeight);
+        pdf.save(`${fileName}.pdf`);
       }
     } catch (error) {
       console.error("Export failed:", error);
@@ -265,12 +224,9 @@ const normalized = result.map((r) => {
               <select
                 value={selectedYear ?? ""}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 disabled={availableYears.length === 0 || loading}
               >
-                <option value="" disabled>
-                  Select Year
-                </option>
                 {availableYears.map((year) => (
                   <option key={year} value={year}>
                     {year}
@@ -282,7 +238,7 @@ const normalized = result.map((r) => {
             <button
               onClick={() => handleDownloadChart("png")}
               disabled={loading || data.length === 0}
-              className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-3 rounded-lg text-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-3 rounded-lg text-sm disabled:opacity-50"
             >
               📤 PNG
             </button>
@@ -290,79 +246,47 @@ const normalized = result.map((r) => {
             <button
               onClick={() => handleDownloadChart("pdf")}
               disabled={loading || data.length === 0}
-              className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 rounded-lg text-sm transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 rounded-lg text-sm disabled:opacity-50"
             >
               🧾 PDF
             </button>
           </div>
         </div>
 
-        {/* Chart Section */}
-        {loading && (
-          <div className="flex items-center justify-center h-96">
-            <p className="text-xl text-blue-500 animate-pulse">
-              Loading performance chart...
-            </p>
-          </div>
-        )}
-        {error && (
-          <div className="flex items-center justify-center h-96">
-            <p className="text-red-600 text-xl font-medium">Error: {error}</p>
-          </div>
-        )}
-
+        {/* Chart */}
         {!loading && !error && data.length > 0 && (
-          <div
-            ref={chartRef}
-            className="chart-container bg-white rounded-lg p-2"
-            style={{ marginBottom: "0.5rem" }}
-          >
+          <div ref={chartRef} className="chart-container bg-white rounded-lg p-2">
             <ResponsiveContainer width="100%" height={360}>
-              <LineChart
-                data={data}
-                margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
-              >
+              <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis
                   dataKey="month"
                   tickFormatter={(m) => getMonthName(Number(m)).substring(0, 3)}
                   tick={{ fontSize: 13, fill: "#374151", fontWeight: 500 }}
-                  tickMargin={8}
-                  axisLine={{ stroke: "#9ca3af" }}
-                  tickLine={{ stroke: "#9ca3af" }}
                 />
                 <YAxis
                   tickFormatter={(v) => `Rp ${Number(v).toLocaleString("id-ID")}`}
                   tick={{ fontSize: 13, fill: "#374151", fontWeight: 500 }}
                   width={110}
-                  tickMargin={6}
-                  axisLine={{ stroke: "#9ca3af" }}
-                  tickLine={{ stroke: "#9ca3af" }}
                 />
-                <Tooltip
-                  labelFormatter={(label) =>
-    [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December"
-    ][label - 1]
-  } />
+                <Tooltip content={<CustomTooltip />} />
                 <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: 13 }} />
-<Line
-  type="monotone"
-  dataKey="target"
-  stroke="#005BAA"
-  strokeWidth={2.5}
-  name="Target"
-  dot={{ r: 3 }}
-/>
-<Line
-  type="monotone"
-  dataKey="achievement"
-  stroke="#F48B28"
-  strokeWidth={2.5}
-  name="Achievement"
-  dot={{ r: 3 }}
-/>
+                <Line
+                  type="monotone"
+                  dataKey="target"
+                  stroke="#005BAA"
+                  strokeWidth={2.5}
+                  name="Target"
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="achievement"
+                  stroke="#F48B28"
+                  strokeWidth={2.5}
+                  name="Achievement"
+                  dot={{ r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
