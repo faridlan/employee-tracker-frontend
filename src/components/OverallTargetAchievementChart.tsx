@@ -5,8 +5,8 @@ import {
 } from "../services/analyticsService";
 import type { MonthlySummary } from "../types/analytics";
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -18,39 +18,37 @@ import { RotateCcw } from "lucide-react";
 
 const TARGET_COLOR = "#005BAA";
 const ACHIEVEMENT_COLOR = "#FF8A00";
-const PERCENTAGE_COLOR = "#16a34a";
-
-type TTPayload = { value?: number | string; name?: string; dataKey?: string }[];
-interface TTProps {
-  active?: boolean;
-  payload?: TTPayload;
-  label?: number | string;
-}
+// const PERCENTAGE_COLOR = "#16a34a";
 
 const formatRp = (value: number) => `Rp ${value.toLocaleString("id-ID")}`;
 
-// Custom Tooltip
-const CustomTooltip = ({ active, payload, label }: TTProps) => {
+interface TooltipPayloadItem {
+  dataKey: string;
+  value: number;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: number | string;
+}
+
+// ✅ Custom Tooltip
+const CustomTooltip: React.FC<TooltipProps> = ({ active, payload, label }) => {
   if (!active || !payload || payload.length === 0) return null;
-  const target = Number(payload.find((p) => p.dataKey === "target")?.value ?? 0);
-  const achievement = Number(
-    payload.find((p) => p.dataKey === "achievement")?.value ?? 0
-  );
-  const percentage = Number(
-    payload.find((p) => p.dataKey === "percentage")?.value ?? 0
-  );
 
+  const target = payload.find((p) => p.dataKey === "target")?.value ?? 0;
+  const achievement = payload.find((p) => p.dataKey === "achievement")?.value ?? 0;
+  const percentage = target > 0 ? (Number(achievement) / Number(target)) * 100 : 0;
   const diff = achievement - target;
-  const isPositive = diff >= 0;
-  const diffColor = isPositive ? "#16a34a" : "#dc2626";
-  const diffSign = isPositive ? "+" : "–";
+  const diffColor = diff >= 0 ? "#16a34a" : "#dc2626";
+  const diffSymbol = diff >= 0 ? "↑" : "↓";
 
-  const monthIndex = Number(label);
-  const monthName =
-    [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
-    ][monthIndex - 1] ?? String(label);
+  const monthNames = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December",
+  ];
+  const monthName = monthNames[Math.max(0, Number(label) - 1)];
 
   return (
     <div
@@ -63,12 +61,17 @@ const CustomTooltip = ({ active, payload, label }: TTProps) => {
       }}
     >
       <p style={{ margin: 0, fontWeight: 600 }}>{monthName}</p>
-      <p style={{ margin: "4px 0", fontSize: 13 }}>🎯 Target: {formatRp(target)}</p>
-      <p style={{ margin: 0, fontSize: 13 }}>
-        🏆 Achievement: {formatRp(achievement)} ({percentage.toFixed(2)}%)
+      <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+        🎯 Target: <strong>{formatRp(Number(target))}</strong>
       </p>
-      <p style={{ margin: "6px 0 0", fontSize: 13, fontWeight: 600, color: diffColor }}>
-        {diffSign} {formatRp(Math.abs(diff))}
+      <p style={{ margin: "2px 0 0", fontSize: 13 }}>
+        🏆 Achievement: <strong>{formatRp(Number(achievement))}</strong>
+      </p>
+      <p style={{ margin: "2px 0 0", fontSize: 13 }}>
+        📊 Rate: <strong>{percentage.toFixed(2)}%</strong>
+      </p>
+      <p style={{ margin: "4px 0 0", fontSize: 13, color: diffColor }}>
+        {diffSymbol} Rp {Math.abs(diff).toLocaleString("id-ID")}
       </p>
     </div>
   );
@@ -77,7 +80,7 @@ const CustomTooltip = ({ active, payload, label }: TTProps) => {
 const OverallTargetAchievementChart: React.FC = () => {
   const [data, setData] = useState<MonthlySummary[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [selectedYear, setSelectedYear] = useState<number | undefined>(undefined);
+  const [selectedYear, setSelectedYear] = useState<number | undefined>();
   const [fromMonth, setFromMonth] = useState<number | "all">("all");
   const [toMonth, setToMonth] = useState<number | "all">("all");
   const [loading, setLoading] = useState(true);
@@ -85,7 +88,7 @@ const OverallTargetAchievementChart: React.FC = () => {
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  // Load years
+  // Load available years
   useEffect(() => {
     getAvailableYears()
       .then((years) => {
@@ -95,7 +98,7 @@ const OverallTargetAchievementChart: React.FC = () => {
       .catch(() => setAvailableYears([]));
   }, []);
 
-  // Fetch data
+  // Fetch monthly data
   useEffect(() => {
     if (!selectedYear) return;
 
@@ -104,8 +107,8 @@ const OverallTargetAchievementChart: React.FC = () => {
         setLoading(true);
         const result = await getOverallMonthlySummary(selectedYear);
         setData(result);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Failed to fetch summary data");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch monthly summary");
       } finally {
         setLoading(false);
       }
@@ -114,18 +117,20 @@ const OverallTargetAchievementChart: React.FC = () => {
     fetchData();
   }, [selectedYear]);
 
+  // Apply month filters
+  const filteredData = useMemo(() => {
+    let filtered = [...data];
+    if (fromMonth !== "all") filtered = filtered.filter((d) => d.month >= fromMonth);
+    if (toMonth !== "all") filtered = filtered.filter((d) => d.month <= toMonth);
+    return filtered;
+  }, [data, fromMonth, toMonth]);
+
   const clearFilters = () => {
     setFromMonth("all");
     setToMonth("all");
   };
 
-  // Apply month range filtering
-  const filteredData = useMemo(() => {
-    if (fromMonth === "all" || toMonth === "all") return data;
-    return data.filter((item) => item.month >= fromMonth && item.month <= toMonth);
-  }, [data, fromMonth, toMonth]);
-
-  if (loading) return <p>Loading overall summary...</p>;
+  if (loading) return <p>Loading monthly summary...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
 
   return (
@@ -133,86 +138,82 @@ const OverallTargetAchievementChart: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-3">
         <h2 className="text-2xl font-semibold flex-1 text-[#005BAA]">
-          🧮 Overall Target vs Achievement
+          📈 Overall Target vs Achievement
         </h2>
-
-        {/* Year Selector */}
-
       </div>
 
-{/* Filters */}
-<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5 text-sm w-full">
-  {/* Left Filters */}
-  <div className="flex flex-wrap items-center gap-2">
-    {/* Year */}
-    <label className="font-medium">Year:</label>
-    <select
-      value={selectedYear ?? ""}
-      onChange={(e) => setSelectedYear(Number(e.target.value))}
-      className="border rounded-lg px-3 py-2"
-    >
-      {availableYears.map((year) => (
-        <option key={year} value={year}>
-          {year}
-        </option>
-      ))}
-    </select>
+      {/* Filters (merged layout) */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5 text-sm w-full">
+        {/* Left Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Year */}
+          <label className="font-medium">Year:</label>
+          <select
+            value={selectedYear ?? ""}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="border rounded-lg px-3 py-2"
+          >
+            {availableYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
 
-    {/* From Month */}
-    <span className="font-medium ml-2">From:</span>
-    <select
-      value={fromMonth}
-      onChange={(e) =>
-        setFromMonth(e.target.value === "all" ? "all" : Number(e.target.value))
-      }
-      className="border rounded-lg px-3 py-2"
-    >
-      <option value="all">Month</option>
-      {months.map((m) => (
-        <option key={m} value={m}>
-          {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]}
-        </option>
-      ))}
-    </select>
+          {/* From Month */}
+          <span className="font-medium ml-2">From:</span>
+          <select
+            value={fromMonth}
+            onChange={(e) =>
+              setFromMonth(e.target.value === "all" ? "all" : Number(e.target.value))
+            }
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Month</option>
+            {months.map((m) => (
+              <option key={m} value={m}>
+                {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]}
+              </option>
+            ))}
+          </select>
 
-    {/* Arrow */}
-    <span className="font-medium text-gray-500">→</span>
+          {/* Arrow */}
+          <span className="font-medium text-gray-500">→</span>
 
-    {/* To Month */}
-    <label className="font-medium">To:</label>
-    <select
-      value={toMonth}
-      onChange={(e) =>
-        setToMonth(e.target.value === "all" ? "all" : Number(e.target.value))
-      }
-      className="border rounded-lg px-3 py-2"
-    >
-      <option value="all">Month</option>
-      {months.map((m) => (
-        <option key={m} value={m}>
-          {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]}
-        </option>
-      ))}
-    </select>
-  </div>
+          {/* To Month */}
+          <label className="font-medium">To:</label>
+          <select
+            value={toMonth}
+            onChange={(e) =>
+              setToMonth(e.target.value === "all" ? "all" : Number(e.target.value))
+            }
+            className="border rounded-lg px-3 py-2"
+          >
+            <option value="all">Month</option>
+            {months.map((m) => (
+              <option key={m} value={m}>
+                {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m - 1]}
+              </option>
+            ))}
+          </select>
+        </div>
 
-  {/* Clear Filter Icon Button */}
-  <button
-    onClick={clearFilters}
-    title="Clear Filters"
-    className="p-2 rounded-full border border-[#005BAA] text-[#005BAA] hover:bg-[#005BAA] hover:text-white transition ml-auto"
-  >
-    <RotateCcw size={18} />
-  </button>
-</div>
-
+        {/* Clear Filter Icon */}
+        <button
+          onClick={clearFilters}
+          title="Clear Filters"
+          className="p-2 rounded-full border border-[#005BAA] text-[#005BAA] hover:bg-[#005BAA] hover:text-white transition ml-auto"
+        >
+          <RotateCcw size={18} />
+        </button>
+      </div>
 
       {/* Chart */}
       {filteredData.length === 0 ? (
         <p className="text-gray-500">No data available.</p>
       ) : (
         <ResponsiveContainer width="100%" height={440}>
-          <BarChart data={filteredData}>
+          <LineChart data={filteredData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey="month"
@@ -222,16 +223,8 @@ const OverallTargetAchievementChart: React.FC = () => {
               tick={{ fontSize: 12, fill: "#4b5563" }}
             />
             <YAxis
-              yAxisId="left"
               tickFormatter={(v) => formatRp(Number(v))}
-              tick={{ fontSize: 8, fill: "#4b5563" }}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              tickFormatter={(v) => `${v}%`}
-              tick={{ fontSize: 10, fill: PERCENTAGE_COLOR }}
-              domain={[0, "auto"]}
+              tick={{ fontSize: 12, fill: "#4b5563" }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend
@@ -239,14 +232,23 @@ const OverallTargetAchievementChart: React.FC = () => {
               align="center"
               wrapperStyle={{ fontSize: 13, marginTop: 10 }}
             />
-            <Bar yAxisId="left" dataKey="target" fill={TARGET_COLOR} name="Target" />
-            <Bar
-              yAxisId="left"
-              dataKey="achievement"
-              fill={ACHIEVEMENT_COLOR}
-              name="Achievement"
+            <Line
+              type="monotone"
+              dataKey="target"
+              stroke={TARGET_COLOR}
+              strokeWidth={3}
+              name="Target"
+              dot={{ r: 4 }}
             />
-          </BarChart>
+            <Line
+              type="monotone"
+              dataKey="achievement"
+              stroke={ACHIEVEMENT_COLOR}
+              strokeWidth={3}
+              name="Achievement"
+              dot={{ r: 4 }}
+            />
+          </LineChart>
         </ResponsiveContainer>
       )}
     </div>
