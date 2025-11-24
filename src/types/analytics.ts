@@ -11,6 +11,7 @@ export interface EmployeePerformance {
 export interface ProductSummary {
   product_id: number;
   product_name: string;
+  category_name: string;
   total_nominal: number;
   month: number;
   year: number;

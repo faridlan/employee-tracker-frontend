@@ -58,3 +58,13 @@ export async function getEmployeeDetail(employeeId: string) {
   if (!response.ok) throw new Error("Failed to fetch employee info");
   return response.json();
 }
+
+export async function getMonthlySummaryByCategory(year?: number) {
+  const url = year
+    ? `${BASE_URL}/analytics/summary/monthly-by-category?year=${year}`
+    : `${BASE_URL}/analytics/summary/monthly-by-category`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch category monthly summary");
+  return res.json();
+}
